@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sirna-data"
+version = "0.1.0"
+description = "Reusable loader for the siRNA knockdown-efficacy dataset (siRNAEfficacyDB + supplementary sources), plus the scripts that fetched it."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Brandon Walker", email = "brandon.walker@ucsf.edu" },
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "pandas>=2.0",
+    "requests>=2.32",
+]
+
+# Only needed to re-run the acquisition scripts in scripts/ (not to load the
+# already-fetched data via `import sirna_data`).
+[project.optional-dependencies]
+fetch = ["pandas>=2.0"]
+test = ["pytest>=8.0"]
+lint = ["ruff>=0.6", "mypy>=1.10", "pandas-stubs", "types-requests"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# long single-line TSV fixture rows are more readable unwrapped
+"tests/conftest.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
