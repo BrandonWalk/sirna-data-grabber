@@ -453,6 +453,7 @@ def load_records(
     csv_path: Path | None = None,
     fasta_path: Path | None = None,
     flank_nt: int = FLANK_NT,
+    include_sirna_efficacy: bool = True,
     include_monopoli: bool = True,
     include_shabalina: bool = True,
     include_cmsirnadb: bool = True,
@@ -465,6 +466,10 @@ def load_records(
     when a site can't be located) and its experimentally measured knockdown
     label. See data/DATA_SOURCES.md for full provenance of every source.
 
+    Every source -- including the primary siRNAEfficacyDB set -- is gated
+    behind its own `include_*` flag, so any combination of sources
+    (including none) can be loaded; none is forced on unconditionally.
+
     Licensing: this function's code is MIT licensed, but the DATA it returns
     is not -- most sources are Creative Commons Non-Commercial and restrict
     commercial use (see NOTICE.md). Calling this prints a one-time reminder
@@ -474,7 +479,9 @@ def load_records(
     csv_path = csv_path or DATA_DIR / "sirna_efficacy.csv"
     fasta_path = fasta_path or DATA_DIR / "mrna_transcripts.fasta"
 
-    records = _load_sirnaefficacydb_records(csv_path, fasta_path, flank_nt)
+    records: list[SiRNARecord] = []
+    if include_sirna_efficacy:
+        records += _load_sirnaefficacydb_records(csv_path, fasta_path, flank_nt)
     if include_monopoli:
         records += _load_monopoli_records(flank_nt)
     if include_shabalina:
