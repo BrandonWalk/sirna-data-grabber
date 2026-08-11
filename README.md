@@ -64,32 +64,19 @@ license terms before reusing this data outside this project.
 
 ## Install
 
-```
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-```
-
-This installs the `sirna_data` package in editable mode, so it resolves
-`data/raw/` relative to this checkout automatically. If you copy the `data/`
-folder somewhere else, point at it explicitly instead:
-
-```
-export SIRNA_DATA_DIR=/path/to/data/raw
-```
-
-Re-fetching the raw data from scratch (not required if `data/raw/` already
-has the files) uses the `sirna-data-fetch` command, installed automatically
-with the package -- no extras needed:
-
-```
-sirna-data-fetch --dest data/raw
-```
-
-This also means a plain `pip install sirna-data-grabber` from PyPI (with no
-git checkout at all) can reconstruct the full dataset itself:
+`sirna-data-grabber` is [on PyPI](https://pypi.org/project/sirna-data-grabber/),
+so most users just need:
 
 ```
 pip install sirna-data-grabber
+```
+
+That installs the `sirna_data` package plus the `sirna-data-fetch` command
+(no extras needed). Since the PyPI package can't ship most of this
+non-commercial data, use `sirna-data-fetch` to reconstruct it from its
+original sources into a local directory, then point `SIRNA_DATA_DIR` at it:
+
+```
 sirna-data-fetch --dest ./my_data
 export SIRNA_DATA_DIR=./my_data
 ```
@@ -97,12 +84,37 @@ export SIRNA_DATA_DIR=./my_data
 `sirna-data-fetch --only sirna_efficacy monopoli` fetches a subset instead of
 all four sources; see `sirna-data-fetch --help`.
 
+### From a git checkout
+
+If you're working from this repo instead (e.g. to browse `data/raw/` and the
+provenance docs alongside the code, or to contribute):
+
+```
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .
+```
+
+This installs `sirna_data` in editable mode, so it resolves `data/raw/`
+relative to the checkout automatically -- no `sirna-data-fetch` or
+`SIRNA_DATA_DIR` needed if `data/raw/` already has the files. If you copy the
+`data/` folder somewhere else, point at it explicitly instead:
+
+```
+export SIRNA_DATA_DIR=/path/to/data/raw
+```
+
+`SIRNA_DATA_DIR` is just the default -- if you'd rather not set an env var at
+all, pass the directory straight to `load_records(data_dir=...)` (see Usage
+below).
+
 ## Usage
 
 ```python
 from sirna_data import load_records, fetch_mrna_by_gene
 
-records = load_records()  # list[SiRNARecord]
+records = load_records()  # list[SiRNARecord], reads from SIRNA_DATA_DIR / default data/raw/
+# Or point directly at a directory -- no env var needed:
+records = load_records(data_dir="./my_data")
 print(len(records), "records across", len({r.gene for r in records}), "genes")
 
 r = records[0]
@@ -120,6 +132,11 @@ transcript.accession, transcript.sequence
 `include_shabalina` / `include_cmsirnadb` / `include_cmsirnadb_full` flags
 (all default `True`) to include or exclude any individual source, including
 the primary siRNAEfficacyDB set -- no source is loaded unconditionally.
+
+`data_dir` (a `Path` or `str`) points every source at a specific directory of
+fetched files, as a plain function argument -- no `SIRNA_DATA_DIR` export
+required. It falls back to `SIRNA_DATA_DIR` if set, then the package's
+default relative `data/raw/` location, in that order.
 
 ## Using this from another project
 

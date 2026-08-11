@@ -147,15 +147,16 @@ def _load_sirnaefficacydb_records(
     return records
 
 
-def _load_monopoli_records(flank_nt: int) -> list[SiRNARecord]:
+def _load_monopoli_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
     """Monopoli et al. 2023 Table S3: 20 chemically-modified siRNAs (a
     cholesterol-conjugated, heavily 2'-F/2'-OMe/phosphorothioate-modified
     "sdRNA" architecture, not a standard unmodified duplex) against 4 genes
     absent from siRNAEfficacyDB. See data/DATA_SOURCES.md for the caveats
     before trusting this the same way as the primary dataset.
     """
-    csv_path = DATA_DIR / "monopoli_extra.csv"
-    fasta_path = DATA_DIR / "monopoli_transcripts.fasta"
+    data_dir = data_dir or DATA_DIR
+    csv_path = data_dir / "monopoli_extra.csv"
+    fasta_path = data_dir / "monopoli_transcripts.fasta"
     if not csv_path.exists() or not fasta_path.exists():
         return []
 
@@ -189,7 +190,7 @@ def _load_monopoli_records(flank_nt: int) -> list[SiRNARecord]:
     return records
 
 
-def _load_shabalina_records(flank_nt: int) -> list[SiRNARecord]:
+def _load_shabalina_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
     """Shabalina, Spiridonov & Ogurtsov 2006 (BMC Bioinformatics 7:65)
     Additional File 4: a 653-siRNA heterogeneous compilation, filtered down
     to the 269 rows (41 genes) targeting genes absent from siRNAEfficacyDB --
@@ -198,8 +199,9 @@ def _load_shabalina_records(flank_nt: int) -> list[SiRNARecord]:
     exact-sequence duplicates of genes we already have) and
     data/DATA_SOURCES.md for the full provenance and caveats.
     """
-    csv_path = DATA_DIR / "shabalina_extra.csv"
-    fasta_path = DATA_DIR / "shabalina_transcripts.fasta"
+    data_dir = data_dir or DATA_DIR
+    csv_path = data_dir / "shabalina_extra.csv"
+    fasta_path = data_dir / "shabalina_transcripts.fasta"
     if not csv_path.exists() or not fasta_path.exists():
         return []
 
@@ -259,12 +261,13 @@ CMSIRNADB_INCLISIRAN_CORE = "AAGCAAAACAGGUCUAGAA"  # LEQVIO's real target -- kee
 CMSIRNADB_INHIBITION_RANGE = (-50.0, 100.0)  # outside this: raw data-entry outliers
 
 
-def _read_cmsirnadb_master() -> pd.DataFrame | None:
+def _read_cmsirnadb_master(data_dir: Path | None = None) -> pd.DataFrame | None:
     """Read the untouched original CMsiRNAdb patent-literature TSV, if
     present, with %inhibition pre-parsed to numeric (a handful of rows carry
     corrupt values, e.g. -7,103,597 -- handled by CMSIRNADB_INHIBITION_RANGE
     downstream, not here)."""
-    tsv_path = DATA_DIR / "cmsirnadb_full_raw.tsv"
+    data_dir = data_dir or DATA_DIR
+    tsv_path = data_dir / "cmsirnadb_full_raw.tsv"
     if not tsv_path.exists():
         return None
     df = pd.read_csv(tsv_path, sep="\t", dtype=str)
@@ -301,7 +304,7 @@ def _cmsirnadb_locate_core(
     return sense_full[:core_len]
 
 
-def _load_cmsirnadb_records(flank_nt: int) -> list[SiRNARecord]:
+def _load_cmsirnadb_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
     """CMsiRNAdb, human PCSK9 subset -- derived at load time from the raw
     master TSV (see the module-level CMsiRNAdb note above for why). Only
     PCSK9 rows are used here; the other 12 genes are handled by
@@ -324,8 +327,9 @@ def _load_cmsirnadb_records(flank_nt: int) -> list[SiRNARecord]:
     - Not deduplicated/collapsed (unlike _load_cmsirnadb_full_records):
       repeated measurements of the same duplex are kept as separate rows.
     """
-    fasta_path = DATA_DIR / "cmsirnadb_transcripts.fasta"
-    df = _read_cmsirnadb_master()
+    data_dir = data_dir or DATA_DIR
+    fasta_path = data_dir / "cmsirnadb_transcripts.fasta"
+    df = _read_cmsirnadb_master(data_dir)
     if df is None or not fasta_path.exists():
         return []
     transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
@@ -370,7 +374,10 @@ def _load_cmsirnadb_records(flank_nt: int) -> list[SiRNARecord]:
 
 
 def _load_cmsirnadb_full_records(
-    flank_nt: int, existing_sequences: frozenset[str] = frozenset()) -> list[SiRNARecord]:
+    flank_nt: int,
+    existing_sequences: frozenset[str] = frozenset(),
+    data_dir: Path | None = None,
+) -> list[SiRNARecord]:
     """CMsiRNAdb, the other 12 genes (AGT, ANGPTL3, APP, CTNNB1, HSD17B13,
     INHBE, LPA, MAPT, MARC1, MSTN, PLN, PNPLA3) -- derived at load time from
     the same raw master TSV as _load_cmsirnadb_records (see the module-level
@@ -397,8 +404,9 @@ def _load_cmsirnadb_full_records(
       fetched, else falls back to duplex-only context like every other
       source's unmapped rows.
     """
-    fasta_path = DATA_DIR / "cmsirnadb_full_transcripts.fasta"
-    df = _read_cmsirnadb_master()
+    data_dir = data_dir or DATA_DIR
+    fasta_path = data_dir / "cmsirnadb_full_transcripts.fasta"
+    df = _read_cmsirnadb_master(data_dir)
     if df is None or not fasta_path.exists():
         return []
     transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
@@ -453,6 +461,7 @@ def load_records(
     csv_path: Path | None = None,
     fasta_path: Path | None = None,
     flank_nt: int = FLANK_NT,
+    data_dir: Path | str | None = None,
     include_sirna_efficacy: bool = True,
     include_monopoli: bool = True,
     include_shabalina: bool = True,
@@ -470,24 +479,32 @@ def load_records(
     behind its own `include_*` flag, so any combination of sources
     (including none) can be loaded; none is forced on unconditionally.
 
+    `data_dir` points every source (except any of `csv_path`/`fasta_path`
+    given explicitly, which still win for the primary source) at a specific
+    directory of fetched files, e.g. `load_records(data_dir="./my_data")`.
+    This is a plain function argument -- no `SIRNA_DATA_DIR` env var or
+    export required. If omitted, falls back to `SIRNA_DATA_DIR` if set, else
+    the package's default relative `data/raw/` location (see `DATA_DIR`).
+
     Licensing: this function's code is MIT licensed, but the DATA it returns
     is not -- most sources are Creative Commons Non-Commercial and restrict
     commercial use (see NOTICE.md). Calling this prints a one-time reminder
     to stderr (silence it with SIRNA_DATA_QUIET=1).
     """
     _maybe_show_license_notice()
-    csv_path = csv_path or DATA_DIR / "sirna_efficacy.csv"
-    fasta_path = fasta_path or DATA_DIR / "mrna_transcripts.fasta"
+    resolved_dir = Path(data_dir) if data_dir is not None else DATA_DIR
+    csv_path = csv_path or resolved_dir / "sirna_efficacy.csv"
+    fasta_path = fasta_path or resolved_dir / "mrna_transcripts.fasta"
 
     records: list[SiRNARecord] = []
     if include_sirna_efficacy:
         records += _load_sirnaefficacydb_records(csv_path, fasta_path, flank_nt)
     if include_monopoli:
-        records += _load_monopoli_records(flank_nt)
+        records += _load_monopoli_records(flank_nt, resolved_dir)
     if include_shabalina:
-        records += _load_shabalina_records(flank_nt)
+        records += _load_shabalina_records(flank_nt, resolved_dir)
     if include_cmsirnadb:
-        records += _load_cmsirnadb_records(flank_nt)
+        records += _load_cmsirnadb_records(flank_nt, resolved_dir)
     if include_cmsirnadb_full:
         # Strand-agnostic sequence index of everything loaded so far, so the
         # 12-gene CMsiRNAdb addition only contributes genuinely new
@@ -497,7 +514,9 @@ def load_records(
             core = r.guide_seq[: r.duplex_len]
             existing_sequences.add(core)
             existing_sequences.add(_revcomp(core))
-        records += _load_cmsirnadb_full_records(flank_nt, frozenset(existing_sequences))
+        records += _load_cmsirnadb_full_records(
+            flank_nt, frozenset(existing_sequences), resolved_dir
+        )
     return records
 
 

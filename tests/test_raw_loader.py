@@ -295,6 +295,28 @@ def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
     assert len(records) == 6
 
 
+def test_load_records_data_dir_arg_without_env_var(
+    fake_data_dir: Path, monkeypatch: pytest.MonkeyPatch):
+    # No SIRNA_DATA_DIR env var, no monkeypatched module DATA_DIR -- just
+    # pass the directory straight to load_records().
+    monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
+    records = load_records(flank_nt=FLANK, data_dir=fake_data_dir)
+    assert len(records) == 6
+    assert {r.source for r in records} == {
+        "siRNAEfficacyDB",
+        "Monopoli2023",
+        "Shabalina2006",
+        "CMsiRNAdb",
+        "CMsiRNAdb_full",
+    }
+
+
+def test_load_records_data_dir_accepts_str(fake_data_dir: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
+    records = load_records(flank_nt=FLANK, data_dir=str(fake_data_dir))
+    assert len(records) == 6
+
+
 # --------------------------------------------------------------------------
 # SIRNA_DATA_DIR env var override (module-level constant, needs a reload)
 # --------------------------------------------------------------------------
