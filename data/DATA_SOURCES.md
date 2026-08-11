@@ -154,7 +154,9 @@ products, so its prepared data files are not safe to vendor into this project.
   derived data instead of downloading an adaptation from us. (The
   transcript FASTA these loaders also read is independently fetched from
   NCBI RefSeq -- public domain, not CMsiRNAdb material -- so that ships
-  as-is.)
+  as-is.) Fetched by `scripts/download_cmsirnadb_data.py` into
+  `data/raw/cmsirnadb_full_raw.tsv`, `data/raw/cmsirnadb_transcripts.fasta`,
+  and `data/raw/cmsirnadb_full_transcripts.fasta`.
 - Only the human PCSK9 subset is used by `_load_cmsirnadb_records` --
   **2,756 of 3,107 raw PCSK9 rows kept** -- takes leave-one-gene-out CV
   from 86 to **87 genes**. The other 12 genes are handled separately (see

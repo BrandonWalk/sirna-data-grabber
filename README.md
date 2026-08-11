@@ -40,6 +40,7 @@ scripts/
   download_data.py           siRNAEfficacyDB + NCBI -> data/raw/sirna_efficacy.csv, mrna_transcripts.fasta
   download_monopoli_data.py  Monopoli et al. 2023 supplementary data -> data/raw/monopoli_*
   download_shabalina_data.py Shabalina et al. 2006 supplementary data -> data/raw/shabalina_*
+  download_cmsirnadb_data.py CMsiRNAdb + NCBI -> data/raw/cmsirnadb_full_raw.tsv, cmsirnadb*_transcripts.fasta
 src/sirna_data/
   raw_loader.py               load + merge every source into SiRNARecord rows
   ncbi_fetch.py                fetch a gene's RefSeq mRNA transcript by symbol
@@ -81,6 +82,7 @@ pip install -e ".[fetch]"
 python scripts/download_data.py
 python scripts/download_monopoli_data.py
 python scripts/download_shabalina_data.py
+python scripts/download_cmsirnadb_data.py
 ```
 
 ## Usage
