@@ -10,7 +10,8 @@
 - License: Creative Commons Attribution Non-Commercial (CC BY-NC) — free to use,
   distribute, and reproduce for non-commercial purposes with attribution to the
   original authors and underlying studies.
-- Fetched by `scripts/download_data.py` into `data/raw/sirna_efficacy.csv`.
+- Fetched by `sirna_data.fetch.sirna_efficacy` (`sirna-data-fetch`) into
+  `data/raw/sirna_efficacy.csv`.
 
 We deliberately did NOT use the merged CSVs from the OligoFormer GitHub repo
 (github.com/lulab/OligoFormer), even though it bundles the same classic
@@ -44,7 +45,7 @@ products, so its prepared data files are not safe to vendor into this project.
   The supplementary PDF (`mmc1.pdf`) was parsed with `pdftotext -layout`; the
   20 rows were verified by exact substring match against the corresponding
   NCBI RefSeq transcripts before being transcribed into
-  `scripts/download_monopoli_data.py`.
+  `sirna_data.fetch.monopoli`.
 - **Important caveat**: these are not standard unmodified siRNA duplexes.
   They use a cholesterol-conjugated, asymmetric (15-nt sense / 20-nt
   antisense) "sdRNA" architecture with heavy 2'-fluoro/2'-O-methyl/
@@ -105,7 +106,7 @@ products, so its prepared data files are not safe to vendor into this project.
   - The accession→gene mapping and every exclusion/correction were derived
     by hand from NCBI esummary/efetch lookups on all 52 accessions in the
     source table (the table itself only has accessions, not gene symbols) —
-    see `scripts/download_shabalina_data.py` for the full mapping and the
+    see `sirna_data.fetch.shabalina` for the full mapping and the
     reasoning per exclusion. Notably: `NM_000314` (PTEN) was excluded as a
     duplicate of the already-present `MMAC1` gene under its old name;
     `NM_004351` is `CBLB`, a distinct paralog from `NM_005188`/`CBL`, not a
@@ -127,7 +128,7 @@ products, so its prepared data files are not safe to vendor into this project.
   RefSeq/GenBank transcript, same as the primary dataset. 266/269 (98.9%)
   located successfully; the remaining 3 fall back to duplex-only context via
   `has_flanking_context`, same graceful degradation as the primary dataset.
-- Fetched by `scripts/download_shabalina_data.py` into
+- Fetched by `sirna_data.fetch.shabalina` (`sirna-data-fetch`) into
   `data/raw/shabalina_extra.csv` and `data/raw/shabalina_transcripts.fasta`.
 
 ## Supplementary siRNA data: CMsiRNAdb, human PCSK9 subset (2,756 rows, 1 new gene)
@@ -154,7 +155,7 @@ products, so its prepared data files are not safe to vendor into this project.
   derived data instead of downloading an adaptation from us. (The
   transcript FASTA these loaders also read is independently fetched from
   NCBI RefSeq -- public domain, not CMsiRNAdb material -- so that ships
-  as-is.) Fetched by `scripts/download_cmsirnadb_data.py` into
+  as-is.) Fetched by `sirna_data.fetch.cmsirnadb` (`sirna-data-fetch`) into
   `data/raw/cmsirnadb_full_raw.tsv`, `data/raw/cmsirnadb_transcripts.fasta`,
   and `data/raw/cmsirnadb_full_transcripts.fasta`.
 - Only the human PCSK9 subset is used by `_load_cmsirnadb_records` --

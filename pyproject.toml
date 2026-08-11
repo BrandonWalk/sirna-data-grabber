@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sirna-data-grabber"
 version = "0.1.0"
-description = "Reusable loader for the siRNA knockdown-efficacy dataset (siRNAEfficacyDB + supplementary sources), plus the scripts that fetched it."
+description = "Reusable loader for the siRNA knockdown-efficacy dataset (siRNAEfficacyDB + supplementary sources), plus the fetchers that built it."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -23,12 +23,18 @@ dependencies = [
     "requests>=2.32",
 ]
 
-# Only needed to re-run the acquisition scripts in scripts/ (not to load the
-# already-fetched data via `import sirna_data`).
 [project.optional-dependencies]
-fetch = ["pandas>=2.0"]
 test = ["pytest>=8.0"]
 lint = ["ruff>=0.6", "mypy>=1.10", "pandas-stubs", "types-requests"]
+
+# Installed automatically -- `sirna-data-fetch` fetches every source
+# load_records() reads into a local directory (data/DATA_SOURCES.md), so a
+# plain `pip install sirna-data-grabber` can reconstruct the dataset without
+# cloning the git repo. No extra dependencies: everything under
+# sirna_data/fetch/ only needs pandas (already required above) plus the
+# standard library.
+[project.scripts]
+sirna-data-fetch = "sirna_data.fetch.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

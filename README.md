@@ -1,16 +1,18 @@
 # sirna-data-grabber
 
-A standalone siRNA knockdown-efficacy dataset: the raw data files, the
-scripts that fetched them, full provenance/license documentation, and a
-small reusable Python package (`sirna_data`) for loading it. Any project
-that wants this dataset can depend on this repo rather than vendoring a
-copy of the data or the loading code.
+A standalone siRNA knockdown-efficacy dataset: the raw data files, full
+provenance/license documentation, and a small reusable Python package
+(`sirna_data`) for loading it -- and, since `pip install sirna-data-grabber`
+alone can't ship most of this non-commercial data, a bundled `sirna-data-fetch`
+command that re-fetches it from its original sources. Any project that wants
+this dataset can depend on this repo (or just the PyPI package) rather than
+vendoring a copy of the data or the loading code.
 
 ## License
 
-**The code in this repo (`sirna_data`, `scripts/`, `tests/`) is MIT
-licensed** — see [`LICENSE`](LICENSE). Use it, modify it, ship it commercially,
-whatever you want.
+**The code in this repo (`sirna_data`, `tests/`) is MIT licensed** — see
+[`LICENSE`](LICENSE). Use it, modify it, ship it commercially, whatever you
+want.
 
 **The data in `data/raw/` is NOT covered by that license.** It's redistributed
 under each original source's own terms, and most of those sources are
@@ -36,15 +38,16 @@ data/
   sirecords_overlap_analysis.md    siRecords overlap/dedup analysis
   data_source_ledger.csv     machine-readable companion to DATA_SOURCE_LEDGER.md
   *.png                      figures referenced by the docs above
-scripts/
-  download_data.py           siRNAEfficacyDB + NCBI -> data/raw/sirna_efficacy.csv, mrna_transcripts.fasta
-  download_monopoli_data.py  Monopoli et al. 2023 supplementary data -> data/raw/monopoli_*
-  download_shabalina_data.py Shabalina et al. 2006 supplementary data -> data/raw/shabalina_*
-  download_cmsirnadb_data.py CMsiRNAdb + NCBI -> data/raw/cmsirnadb_full_raw.tsv, cmsirnadb*_transcripts.fasta
 src/sirna_data/
   raw_loader.py               load + merge every source into SiRNARecord rows
   ncbi_fetch.py                fetch a gene's RefSeq mRNA transcript by symbol
   __init__.py                  public API
+  fetch/                       sirna-data-fetch CLI + per-source fetchers (see Install below)
+    cli.py                       `sirna-data-fetch` entry point ([project.scripts])
+    sirna_efficacy.py            siRNAEfficacyDB + NCBI -> sirna_efficacy.csv, mrna_transcripts.fasta
+    monopoli.py                  Monopoli et al. 2023 supplementary data -> monopoli_*
+    shabalina.py                 Shabalina et al. 2006 supplementary data -> shabalina_*
+    cmsirnadb.py                 CMsiRNAdb + NCBI -> cmsirnadb_full_raw.tsv, cmsirnadb*_transcripts.fasta
 tests/
   test_raw_loader.py          unit tests for raw_loader.py (fixtures, no real data needed)
   test_ncbi_fetch.py          unit tests for ncbi_fetch.py (mocked HTTP calls)
@@ -75,15 +78,24 @@ export SIRNA_DATA_DIR=/path/to/data/raw
 ```
 
 Re-fetching the raw data from scratch (not required if `data/raw/` already
-has the files):
+has the files) uses the `sirna-data-fetch` command, installed automatically
+with the package -- no extras needed:
 
 ```
-pip install -e ".[fetch]"
-python scripts/download_data.py
-python scripts/download_monopoli_data.py
-python scripts/download_shabalina_data.py
-python scripts/download_cmsirnadb_data.py
+sirna-data-fetch --dest data/raw
 ```
+
+This also means a plain `pip install sirna-data-grabber` from PyPI (with no
+git checkout at all) can reconstruct the full dataset itself:
+
+```
+pip install sirna-data-grabber
+sirna-data-fetch --dest ./my_data
+export SIRNA_DATA_DIR=./my_data
+```
+
+`sirna-data-fetch --only sirna_efficacy monopoli` fetches a subset instead of
+all four sources; see `sirna-data-fetch --help`.
 
 ## Usage
 

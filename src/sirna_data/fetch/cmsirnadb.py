@@ -1,13 +1,11 @@
-#!/usr/bin/env python3
 """Fetch CMsiRNAdb's original, unmodified bulk TSV release, plus the NCBI
-RefSeq transcripts src/sirna_data/raw_loader.py's CMsiRNAdb loaders need,
-into data/raw/.
+RefSeq transcripts raw_loader.py's CMsiRNAdb loaders need.
 
-Sources (see data/DATA_SOURCES.md and data/CMSIRNADB_FULL_RETRIEVAL.md for
-full attribution/license notes):
+Sources (see ../../../data/DATA_SOURCES.md and
+../../../data/CMSIRNADB_FULL_RETRIEVAL.md for full attribution/license notes):
   - CMsiRNAdb (He et al. 2026, BMC Bioinformatics), CC BY-NC-ND 4.0. Its
     "No Derivatives" term means only the ORIGINAL, unmodified download may be
-    redistributed -- this script writes exactly that file
+    redistributed -- this module writes exactly that file
     (cmsirnadb_full_raw.tsv) and nothing derived from it. All filtering/
     collapsing happens later, in code, at load time
     (_load_cmsirnadb_records/_load_cmsirnadb_full_records in raw_loader.py).
@@ -22,26 +20,24 @@ from pathlib import Path
 
 import pandas as pd
 
-RAW_DIR = Path(__file__).resolve().parents[1] / "data" / "raw"
 CMSIRNADB_URL = "https://www.cellknowledge.com.cn/CMsiRNAdb/download/CMsiRNA_data_update.tsv"
 EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 BATCH_SIZE = 40  # keep each efetch request small and polite
 REQUEST_DELAY_S = 0.4  # NCBI allows 3 req/s without an API key
 
-# Must match CMSIRNADB_PCSK9_ACCESSION in src/sirna_data/raw_loader.py: the
-# one canonical human PCSK9 coding transcript every PCSK9 row is located
-# against, regardless of what accession the row itself cites (many cite a
-# non-coding variant or no accession at all -- see data/DATA_SOURCES.md).
+# Must match CMSIRNADB_PCSK9_ACCESSION in raw_loader.py: the one canonical
+# human PCSK9 coding transcript every PCSK9 row is located against,
+# regardless of what accession the row itself cites (many cite a non-coding
+# variant or no accession at all -- see ../../../data/DATA_SOURCES.md).
 PCSK9_ACCESSION = "NM_174936.4"
 
 
-def download_cmsirnadb_table() -> pd.DataFrame:
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
-    dest = RAW_DIR / "cmsirnadb_full_raw.tsv"
-    urllib.request.urlretrieve(CMSIRNADB_URL, dest)
+def download_cmsirnadb_table(dest: Path) -> pd.DataFrame:
+    tsv_path = dest / "cmsirnadb_full_raw.tsv"
+    urllib.request.urlretrieve(CMSIRNADB_URL, tsv_path)
     # dtype=str: several downstream columns (accessions, sequences) must
     # round-trip as exact strings, matching raw_loader.py's own read.
-    df = pd.read_csv(dest, sep="\t", dtype=str)
+    df = pd.read_csv(tsv_path, sep="\t", dtype=str)
     print(f"Downloaded {len(df)} CMsiRNAdb rows covering {df['Target_Gene'].nunique()} genes")
     return df
 
@@ -86,8 +82,11 @@ def write_fasta(path: Path, sequences: dict[str, str]) -> None:
             fh.write(f">{acc}\n{seq}\n")
 
 
-def main() -> None:
-    df = download_cmsirnadb_table()
+def fetch(dest: Path) -> None:
+    """Writes cmsirnadb_full_raw.tsv, cmsirnadb_transcripts.fasta, and
+    cmsirnadb_full_transcripts.fasta into `dest`."""
+    dest.mkdir(parents=True, exist_ok=True)
+    df = download_cmsirnadb_table(dest)
 
     # PCSK9: fetch only the one canonical accession every PCSK9 row is
     # located against (see _load_cmsirnadb_records) -- not derived from the
@@ -96,7 +95,7 @@ def main() -> None:
     pcsk9_seq = fetch_transcript_fasta([PCSK9_ACCESSION])
     if PCSK9_ACCESSION not in pcsk9_seq:
         print(f"WARNING: {PCSK9_ACCESSION} did not resolve")
-    pcsk9_fasta_path = RAW_DIR / "cmsirnadb_transcripts.fasta"
+    pcsk9_fasta_path = dest / "cmsirnadb_transcripts.fasta"
     write_fasta(pcsk9_fasta_path, pcsk9_seq)
     print(f"Wrote {pcsk9_fasta_path} ({len(pcsk9_seq)} sequence)")
 
@@ -112,13 +111,8 @@ def main() -> None:
     missing = set(accessions) - set(sequences)
     if missing:
         print(f"WARNING: {len(missing)} accessions did not resolve: {sorted(missing)}")
-    full_fasta_path = RAW_DIR / "cmsirnadb_full_transcripts.fasta"
+    full_fasta_path = dest / "cmsirnadb_full_transcripts.fasta"
     write_fasta(full_fasta_path, sequences)
     print(f"Wrote {full_fasta_path} ({len(sequences)} sequences)")
 
-    tsv_path = RAW_DIR / "cmsirnadb_full_raw.tsv"
-    print(f"Wrote {tsv_path} ({len(df)} rows)")
-
-
-if __name__ == "__main__":
-    main()
+    print(f"Wrote {dest / 'cmsirnadb_full_raw.tsv'} ({len(df)} rows)")
