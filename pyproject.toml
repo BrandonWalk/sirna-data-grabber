@@ -23,6 +23,11 @@ dependencies = [
     "requests>=2.32",
 ]
 
+[project.urls]
+Homepage = "https://github.com/BrandonWalk/sirna-data-grabber"
+Repository = "https://github.com/BrandonWalk/sirna-data-grabber"
+Issues = "https://github.com/BrandonWalk/sirna-data-grabber/issues"
+
 [project.optional-dependencies]
 test = ["pytest>=8.0"]
 lint = ["ruff>=0.6", "mypy>=1.10", "pandas-stubs", "types-requests"]
