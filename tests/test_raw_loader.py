@@ -260,6 +260,34 @@ def test_load_records_respects_include_flags(patch_data_dir: Path, fake_data_dir
     assert {r.source for r in records} == {"siRNAEfficacyDB"}
 
 
+def test_load_records_can_exclude_primary_source(patch_data_dir: Path, fake_data_dir: Path):
+    # the primary siRNAEfficacyDB set must be excludable too -- no source is
+    # forced on unconditionally.
+    records = load_records(
+        csv_path=fake_data_dir / "sirna_efficacy.csv",
+        fasta_path=fake_data_dir / "mrna_transcripts.fasta",
+        flank_nt=FLANK,
+        include_sirna_efficacy=False,
+    )
+    assert "siRNAEfficacyDB" not in {r.source for r in records}
+    # the other 4 supplementary sources still load by default
+    assert len(records) == 4
+
+
+def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake_data_dir: Path):
+    records = load_records(
+        csv_path=fake_data_dir / "sirna_efficacy.csv",
+        fasta_path=fake_data_dir / "mrna_transcripts.fasta",
+        flank_nt=FLANK,
+        include_sirna_efficacy=False,
+        include_monopoli=False,
+        include_shabalina=False,
+        include_cmsirnadb=False,
+        include_cmsirnadb_full=False,
+    )
+    assert records == []
+
+
 def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
     # csv_path/fasta_path omitted -> should fall back to DATA_DIR/<default filenames>,
     # which patch_data_dir has already pointed at the fixture directory.

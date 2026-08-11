@@ -116,9 +116,10 @@ transcript = fetch_mrna_by_gene("TP53")
 transcript.accession, transcript.sequence
 ```
 
-`load_records()` takes `include_monopoli` / `include_shabalina` /
-`include_cmsirnadb` / `include_cmsirnadb_full` flags to exclude any
-supplementary source and use only the primary siRNAEfficacyDB set.
+`load_records()` takes `include_sirna_efficacy` / `include_monopoli` /
+`include_shabalina` / `include_cmsirnadb` / `include_cmsirnadb_full` flags
+(all default `True`) to include or exclude any individual source, including
+the primary siRNAEfficacyDB set -- no source is loaded unconditionally.
 
 ## Using this from another project
 
