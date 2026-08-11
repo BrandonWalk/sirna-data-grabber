@@ -14,7 +14,7 @@ from dataclasses import dataclass
 import requests
 
 EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
-TOOL_PARAMS = {"tool": "sirna-data", "email": "sirna-graph@example.com"}
+TOOL_PARAMS = {"tool": "sirna-data-grabber", "email": "sirna-data-grabber@example.com"}
 REQUEST_TIMEOUT = 15
 
 
