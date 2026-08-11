@@ -91,8 +91,7 @@ class SiRNARecord:
 
 
 def _locate_window(
-    sense: str, transcript: str | None, flank_nt: int
-) -> tuple[str, int, bool]:
+    sense: str, transcript: str | None, flank_nt: int) -> tuple[str, int, bool]:
     """Find `sense` in `transcript` and return (mrna_window, site_start_in_window,
     has_flanking_context), falling back to duplex-only context if not found."""
     if transcript is None:
@@ -111,8 +110,7 @@ def _revcomp(seq: str) -> str:
 
 
 def _load_sirnaefficacydb_records(
-    csv_path: Path, fasta_path: Path, flank_nt: int
-) -> list[SiRNARecord]:
+    csv_path: Path, fasta_path: Path, flank_nt: int) -> list[SiRNARecord]:
     """siRNAEfficacyDB (Zhang et al. 2024) -- the primary source. Itself a
     compilation of classic published assays (Huesken et al. 2005 and
     others; see data/DATA_SOURCES.md), but the raw file has no per-row
@@ -275,8 +273,7 @@ def _read_cmsirnadb_master() -> pd.DataFrame | None:
 
 
 def _cmsirnadb_locate_core(
-    sense_full: str, transcript: str | None, core_len: int = CMSIRNADB_CORE_LEN
-) -> str | None:
+    sense_full: str, transcript: str | None, core_len: int = CMSIRNADB_CORE_LEN) -> str | None:
     """CMsiRNAdb's raw Sense_seqence column runs longer than the real
     duplex core for some rows (extra flanking bases from the reported
     chemistry, not always trimmed from the 3' end only). Tries every
@@ -373,8 +370,7 @@ def _load_cmsirnadb_records(flank_nt: int) -> list[SiRNARecord]:
 
 
 def _load_cmsirnadb_full_records(
-    flank_nt: int, existing_sequences: frozenset[str] = frozenset()
-) -> list[SiRNARecord]:
+    flank_nt: int, existing_sequences: frozenset[str] = frozenset()) -> list[SiRNARecord]:
     """CMsiRNAdb, the other 12 genes (AGT, ANGPTL3, APP, CTNNB1, HSD17B13,
     INHBE, LPA, MAPT, MARC1, MSTN, PLN, PNPLA3) -- derived at load time from
     the same raw master TSV as _load_cmsirnadb_records (see the module-level
@@ -460,8 +456,7 @@ def load_records(
     include_monopoli: bool = True,
     include_shabalina: bool = True,
     include_cmsirnadb: bool = True,
-    include_cmsirnadb_full: bool = True,
-) -> list[SiRNARecord]:
+    include_cmsirnadb_full: bool = True ) -> list[SiRNARecord]:
     """Load the full merged siRNA-efficacy dataset as a list of SiRNARecord.
 
     Each record pairs an siRNA guide sequence with the local mRNA window

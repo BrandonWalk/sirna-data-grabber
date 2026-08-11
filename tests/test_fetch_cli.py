@@ -19,8 +19,7 @@ def mock_sources(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_default_dest_is_data_raw(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources):
     resolved_tmp = tmp_path.resolve()
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     monkeypatch.chdir(resolved_tmp)
@@ -35,8 +34,7 @@ def test_default_dest_is_data_raw(
 
 
 def test_sirna_data_dir_env_var_used_as_default(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources):
     env_dest = (tmp_path / "from_env").resolve()
     monkeypatch.setenv("SIRNA_DATA_DIR", str(env_dest))
     monkeypatch.setattr("sys.argv", ["sirna-data-fetch"])
@@ -49,8 +47,7 @@ def test_sirna_data_dir_env_var_used_as_default(
 
 
 def test_explicit_dest_overrides_env_var(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources):
     monkeypatch.setenv("SIRNA_DATA_DIR", str(tmp_path / "ignored"))
     explicit_dest = (tmp_path / "explicit").resolve()
     monkeypatch.setattr("sys.argv", ["sirna-data-fetch", "--dest", str(explicit_dest)])
@@ -63,8 +60,7 @@ def test_explicit_dest_overrides_env_var(
 
 
 def test_only_filters_to_requested_sources(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources):
     resolved_tmp = tmp_path.resolve()
     monkeypatch.setattr(
         "sys.argv",
@@ -80,8 +76,7 @@ def test_only_filters_to_requested_sources(
 
 
 def test_only_rejects_unknown_source(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_sources):
     monkeypatch.setattr(
         "sys.argv", ["sirna-data-fetch", "--dest", str(tmp_path), "--only", "not_a_source"]
     )

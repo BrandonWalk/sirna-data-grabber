@@ -197,8 +197,7 @@ def test_load_cmsirnadb_full_records(patch_data_dir: Path, fixture_constants):
 
 
 def test_load_cmsirnadb_full_records_dedup_against_existing(
-    patch_data_dir: Path, fixture_constants
-):
+    patch_data_dir: Path, fixture_constants):
     existing = frozenset({fixture_constants.cmsirnadb_other_site})
     records = _load_cmsirnadb_full_records(FLANK, existing_sequences=existing)
     assert records == []
@@ -214,8 +213,7 @@ def test_load_cmsirnadb_full_records_dedup_against_existing(
     ],
 )
 def test_supplementary_loaders_return_empty_when_files_missing(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, loader
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, loader):
     import sirna_data.raw_loader as raw_loader_module
 
     empty_dir = tmp_path / "empty"
@@ -275,8 +273,7 @@ def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
 
 
 def test_data_dir_env_var_override(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, reload_raw_loader
-):
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, reload_raw_loader):
     custom_dir = tmp_path / "custom_raw"
     custom_dir.mkdir()
     monkeypatch.setenv("SIRNA_DATA_DIR", str(custom_dir))
