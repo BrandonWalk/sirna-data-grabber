@@ -1,6 +1,6 @@
 # NOTICE — data licenses
 
-This repo's code (`sirna_data`, `scripts/`, `tests/`) is MIT licensed (see
+This repo's code (`sirna_data`, `tests/`) is MIT licensed (see
 [`LICENSE`](LICENSE)) and may be used, modified, and redistributed freely,
 including commercially.
 

@@ -1,17 +1,16 @@
-#!/usr/bin/env python3
 """Fetch the small supplementary dataset from Monopoli et al. 2023 (Molecular
 Therapy Nucleic Acids, CC BY 4.0) -- Table S3, 20 chemically-modified siRNAs
 against 4 genes (APP, MAPT, BACE1, SNCA) not present in siRNAEfficacyDB.
 
 Retrieved via Europe PMC's public supplementaryFiles API (no bot-detection
-evasion involved -- see data/DATA_SOURCES.md for how this differs from the
-ThermoFisher catalog we declined to scrape).
+evasion involved -- see ../../../data/DATA_SOURCES.md for how this differs
+from the ThermoFisher catalog we declined to scrape).
 
 This is a distinct, smaller augmentation to the primary dataset: different
 assay chemistry (cholesterol-conjugated, heavily 2'-F/2'-OMe/phosphorothioate
 modified "sdRNA", not a standard unmodified siRNA duplex) -- see
-data/DATA_SOURCES.md for the caveats before trusting this data the same way
-as the primary set.
+../../../data/DATA_SOURCES.md for the caveats before trusting this data the
+same way as the primary set.
 """
 from __future__ import annotations
 
@@ -19,7 +18,6 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-RAW_DIR = Path(__file__).resolve().parents[1] / "data" / "raw"
 EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 
 # Table S3 of Monopoli et al. 2023 (doi:10.1016/j.omtn.2023.06.010), transcribed
@@ -70,7 +68,8 @@ def fetch_transcripts() -> dict[str, str]:
     with urllib.request.urlopen(f"{EFETCH_URL}?{params}", timeout=60) as resp:
         text = resp.read().decode()
     sequences: dict[str, str] = {}
-    header, chunks = None, []
+    header: str | None = None
+    chunks: list[str] = []
     for line in text.splitlines():
         if line.startswith(">"):
             if header is not None:
@@ -84,10 +83,11 @@ def fetch_transcripts() -> dict[str, str]:
     return sequences
 
 
-def main() -> None:
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
+def fetch(dest: Path) -> None:
+    """Writes monopoli_extra.csv and monopoli_transcripts.fasta into `dest`."""
+    dest.mkdir(parents=True, exist_ok=True)
 
-    csv_path = RAW_DIR / "monopoli_extra.csv"
+    csv_path = dest / "monopoli_extra.csv"
     with open(csv_path, "w") as fh:
         fh.write("Sequence,Gene,Accession_number,Reporter_Remaining_Pct,SD_Pct\n")
         for seq, gene, remaining, sd in TABLE_S3:
@@ -95,12 +95,8 @@ def main() -> None:
     print(f"Wrote {csv_path} ({len(TABLE_S3)} rows)")
 
     sequences = fetch_transcripts()
-    fasta_path = RAW_DIR / "monopoli_transcripts.fasta"
+    fasta_path = dest / "monopoli_transcripts.fasta"
     with open(fasta_path, "w") as fh:
         for acc, seq in sequences.items():
             fh.write(f">{acc}\n{seq}\n")
     print(f"Wrote {fasta_path} ({len(sequences)} transcripts)")
-
-
-if __name__ == "__main__":
-    main()

@@ -195,7 +195,7 @@ def _load_shabalina_records(flank_nt: int) -> list[SiRNARecord]:
     """Shabalina, Spiridonov & Ogurtsov 2006 (BMC Bioinformatics 7:65)
     Additional File 4: a 653-siRNA heterogeneous compilation, filtered down
     to the 269 rows (41 genes) targeting genes absent from siRNAEfficacyDB --
-    see scripts/download_shabalina_data.py for how the kept/excluded genes
+    see sirna_data.fetch.shabalina for how the kept/excluded genes
     were determined (roughly half of the 653 rows turned out to be
     exact-sequence duplicates of genes we already have) and
     data/DATA_SOURCES.md for the full provenance and caveats.

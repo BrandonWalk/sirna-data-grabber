@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Fetch the siRNA training database from Shabalina, Spiridonov & Ogurtsov
 2006 (BMC Bioinformatics 7:65, CC BY 2.0) -- Additional File 4 ("TableS1A"),
 a 653-siRNA / 52-gene heterogeneous compilation used to train their
@@ -6,23 +5,24 @@ a 653-siRNA / 52-gene heterogeneous compilation used to train their
 
 Retrieved via Europe PMC's public supplementaryFiles API (same legitimate,
 documented bulk-access endpoint used for the Monopoli et al. 2023 data --
-see data/DATA_SOURCES.md), not scraping.
+see ../../../data/DATA_SOURCES.md), not scraping.
 
 We only keep rows targeting genes *not already present* in siRNAEfficacyDB
 (our primary dataset): roughly half of the 653 rows (mostly from Khvorova
 et al. 2003 and a few other sources) turned out to be exact-sequence
 duplicates of genes we already have, confirmed by direct antisense-sequence
-matching against data/raw/sirna_efficacy.csv before this script was written.
+matching against data/raw/sirna_efficacy.csv before this module was written.
 The gene->accession mapping and the handful of exclusions/corrections below
 were derived by hand from NCBI esummary/efetch lookups on each of the 52
-accessions in the source table -- see data/DATA_SOURCES.md for the full
-reasoning (in particular: NM_000314/PTEN is excluded as a duplicate of the
-already-present MMAC1 gene under its old name; NM_004351 is CBLB, a distinct
-paralog from NM_005188/CBL, not the same gene; U47298 is the pGL3 luciferase
-reporter vector, i.e. the same "Firefly luciferase" gene already present;
-M25346 (a puromycin-resistance marker, "PAC") and the two tissue-factor
-orthologs are kept as legitimate distinct non-endogenous targets, the same
-way "Firefly luciferase"/"SEAP"/"EGFP" already are in the primary dataset).
+accessions in the source table -- see ../../../data/DATA_SOURCES.md for the
+full reasoning (in particular: NM_000314/PTEN is excluded as a duplicate of
+the already-present MMAC1 gene under its old name; NM_004351 is CBLB, a
+distinct paralog from NM_005188/CBL, not the same gene; U47298 is the pGL3
+luciferase reporter vector, i.e. the same "Firefly luciferase" gene already
+present; M25346 (a puromycin-resistance marker, "PAC") and the two
+tissue-factor orthologs are kept as legitimate distinct non-endogenous
+targets, the same way "Firefly luciferase"/"SEAP"/"EGFP" already are in the
+primary dataset).
 """
 from __future__ import annotations
 
@@ -33,7 +33,6 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-RAW_DIR = Path(__file__).resolve().parents[1] / "data" / "raw"
 SUPPL_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC1431570/supplementaryFiles"
 EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 TABLE_S1A_FILENAME = "1471-2105-7-65-S4.csv"
@@ -146,7 +145,8 @@ def fetch_transcripts(accessions: list[str]) -> dict[str, str]:
     with urllib.request.urlopen(f"{EFETCH_URL}?{params}", timeout=60) as resp:
         text = resp.read().decode()
     sequences: dict[str, str] = {}
-    header, chunks = None, []
+    header: str | None = None
+    chunks: list[str] = []
     for line in text.splitlines():
         if line.startswith(">"):
             if header is not None:
@@ -160,8 +160,9 @@ def fetch_transcripts(accessions: list[str]) -> dict[str, str]:
     return sequences
 
 
-def main() -> None:
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
+def fetch(dest: Path) -> None:
+    """Writes shabalina_extra.csv and shabalina_transcripts.fasta into `dest`."""
+    dest.mkdir(parents=True, exist_ok=True)
 
     all_rows = fetch_table_s1a()
     print(f"Fetched {len(all_rows)} rows from Additional File 4")
@@ -182,7 +183,7 @@ def main() -> None:
 
     print(f"Keeping {len(new_rows)} rows for {len(set(r['gene'] for r in new_rows))} new genes")
 
-    csv_path = RAW_DIR / "shabalina_extra.csv"
+    csv_path = dest / "shabalina_extra.csv"
     with open(csv_path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["Sequence", "Gene", "Accession_number", "Activity_Remaining_Pct"])
@@ -191,14 +192,10 @@ def main() -> None:
             w.writerow([sense, r["gene"], r["accession"], r["activity_remaining"]])
     print(f"Wrote {csv_path} ({len(new_rows)} rows)")
 
-    accessions = sorted(set(r["accession"] for r in new_rows))
+    accessions = sorted({r["accession"] for r in new_rows})
     sequences = fetch_transcripts(accessions)
-    fasta_path = RAW_DIR / "shabalina_transcripts.fasta"
+    fasta_path = dest / "shabalina_transcripts.fasta"
     with open(fasta_path, "w") as fh:
         for acc, seq in sequences.items():
             fh.write(f">{acc}\n{seq}\n")
     print(f"Wrote {fasta_path} ({len(sequences)} transcripts)")
-
-
-if __name__ == "__main__":
-    main()
