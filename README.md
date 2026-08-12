@@ -74,10 +74,24 @@ pip install sirna-data-grabber
 That installs the `sirna_data` package plus the `sirna-data-fetch` command
 (no extras needed). Since the PyPI package can't ship most of this
 non-commercial data, use `sirna-data-fetch` to reconstruct it from its
-original sources into a local directory, then point `SIRNA_DATA_DIR` at it:
+original sources into a local directory:
 
 ```
 sirna-data-fetch --dest ./my_data
+```
+
+Then point `sirna_data` at that directory. Two equivalent ways to do this --
+pass it directly, no env var needed:
+
+```python
+from sirna_data import load_records
+records = load_records(data_dir="./my_data")
+```
+
+or export it once as `SIRNA_DATA_DIR` and call `load_records()` with no
+arguments:
+
+```
 export SIRNA_DATA_DIR=./my_data
 ```
 
@@ -95,26 +109,17 @@ pip install -e .
 ```
 
 This installs `sirna_data` in editable mode, so it resolves `data/raw/`
-relative to the checkout automatically -- no `sirna-data-fetch` or
-`SIRNA_DATA_DIR` needed if `data/raw/` already has the files. If you copy the
-`data/` folder somewhere else, point at it explicitly instead:
-
-```
-export SIRNA_DATA_DIR=/path/to/data/raw
-```
-
-`SIRNA_DATA_DIR` is just the default -- if you'd rather not set an env var at
-all, pass the directory straight to `load_records(data_dir=...)` (see Usage
-below).
+relative to the checkout automatically -- no `sirna-data-fetch`,
+`SIRNA_DATA_DIR`, or `data_dir` needed if `data/raw/` already has the files.
+If you copy the `data/` folder somewhere else, point at it with either
+`data_dir` or `SIRNA_DATA_DIR` as shown above.
 
 ## Usage
 
 ```python
 from sirna_data import load_records, fetch_mrna_by_gene
 
-records = load_records()  # list[SiRNARecord], reads from SIRNA_DATA_DIR / default data/raw/
-# Or point directly at a directory -- no env var needed:
-records = load_records(data_dir="./my_data")
+records = load_records()  # reads from data_dir / SIRNA_DATA_DIR / default data/raw/, in that order
 print(len(records), "records across", len({r.gene for r in records}), "genes")
 
 r = records[0]
