@@ -123,12 +123,32 @@ def _f1(true_positive_labels: Sequence[bool], pred_positive_labels: Sequence[boo
     return 2 * precision * recall / (precision + recall)
 
 
+def _validate_bounds(values: Sequence[float], name: str, valid_range: tuple[float, float]) -> None:
+    """Raise ValueError if any element of `values` falls outside
+    `valid_range` (inclusive of both ends). NaN values always fail this
+    check (NaN compares False to everything), which is the desired
+    behavior here -- a NaN in raw KD data is a data-quality problem, not
+    something that should silently propagate into the metrics.
+    """
+    lo, hi = valid_range
+    bad = [(i, v) for i, v in enumerate(values) if not (lo <= v <= hi)]
+    if bad:
+        first_i, first_v = bad[0]
+        raise ValueError(
+            f"{name} contains {len(bad)} value(s) outside valid_range={valid_range!r} "
+            f"(e.g. {name}[{first_i}] = {first_v!r}). If your KD values use a different "
+            f"scale (e.g. a 0-100 percent scale instead of a 0-1 fraction), pass a "
+            f"matching `valid_range`."
+        )
+
+
 def evaluate_predictions(
     predicted_kd: Sequence[float],
     actual_kd: Sequence[float],
     genes: Sequence[str] | None = None,
     *,
     hit_threshold: float = 0.7,
+    valid_range: tuple[float, float] = (0.0, 1.0),
 ) -> PredictionMetrics:
     """Evaluate `predicted_kd` against `actual_kd`.
 
@@ -146,7 +166,16 @@ def evaluate_predictions(
         units/scale as `predicted_kd`/`actual_kd` (default 0.7 assumes a
         0-1 fractional scale; pass e.g. 70.0 if your KD values are a 0-100
         percent scale instead). See the module docstring for exactly how
-        it's applied to each metric.
+        it's applied to each metric. Must fall within `valid_range`.
+    valid_range : (min, max), inclusive, that every value in `predicted_kd`
+        and `actual_kd` must fall within -- guards against unit mix-ups
+        (e.g. accidentally passing a 0-100 percent-scale list against the
+        0-1 fraction default) and obvious data-entry errors. Defaults to
+        (0.0, 1.0), matching `hit_threshold`'s default scale assumption;
+        override to match your own data's scale/plausible range (e.g.
+        (0.0, 100.0) for percent-scale KD, or (-50.0, 100.0) to also allow
+        the small negative "inhibition" values noise sometimes produces,
+        matching this repo's raw_loader.py convention).
 
     Returns
     -------
@@ -155,6 +184,13 @@ def evaluate_predictions(
     when `genes` is given. Any individual metric that's undefined for the
     given data (e.g. PCC with fewer than 2 points, or AUC with no negative
     examples) is NaN rather than raising -- check with `math.isnan(...)`.
+
+    Raises
+    ------
+    ValueError : if `predicted_kd`/`actual_kd`/`genes` have mismatched
+        lengths, if the inputs are empty, if `valid_range` isn't a valid
+        (min, max) pair, if `hit_threshold` falls outside `valid_range`, or
+        if any KD value falls outside `valid_range`.
     """
     n = len(predicted_kd)
     if len(actual_kd) != n:
@@ -166,8 +202,20 @@ def evaluate_predictions(
     if genes is not None and len(genes) != n:
         raise ValueError(f"genes must be the same length as predicted_kd, got {len(genes)}")
 
+    lo, hi = valid_range
+    if lo > hi:
+        raise ValueError(f"valid_range must be (min, max) with min <= max, got {valid_range!r}")
+    if not lo <= hit_threshold <= hi:
+        raise ValueError(
+            f"hit_threshold={hit_threshold!r} falls outside valid_range={valid_range!r} -- "
+            f"they must use the same scale (e.g. pass valid_range=(0.0, 100.0) alongside a "
+            f"percent-scale hit_threshold)."
+        )
+
     predicted_kd = [float(v) for v in predicted_kd]
     actual_kd = [float(v) for v in actual_kd]
+    _validate_bounds(predicted_kd, "predicted_kd", valid_range)
+    _validate_bounds(actual_kd, "actual_kd", valid_range)
 
     mse = sum((a - p) ** 2 for a, p in zip(actual_kd, predicted_kd, strict=True)) / n
     rmse = math.sqrt(mse)

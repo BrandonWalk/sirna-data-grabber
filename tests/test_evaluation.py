@@ -200,6 +200,88 @@ def test_rejects_mismatched_genes_length():
         evaluate_predictions([0.1, 0.2], [0.1, 0.2], genes=["A"])
 
 
+def test_mismatched_length_error_message_reports_both_lengths():
+    with pytest.raises(ValueError, match=r"\b3\b.*\b2\b|\b2\b.*\b3\b"):
+        evaluate_predictions([0.1, 0.2, 0.3], [0.1, 0.2])
+
+
 def test_rejects_empty_input():
     with pytest.raises(ValueError):
         evaluate_predictions([], [])
+
+
+def test_rejects_mismatched_predicted_actual_genes_all_different_lengths():
+    with pytest.raises(ValueError):
+        evaluate_predictions([0.1, 0.2, 0.3], [0.1, 0.2, 0.3], genes=["A", "B"])
+
+
+# --------------------------------------------------------------------------
+# valid_range: bounds checking on the KD values themselves
+# --------------------------------------------------------------------------
+
+
+def test_rejects_predicted_kd_above_max():
+    with pytest.raises(ValueError):
+        evaluate_predictions([0.1, 1.5], [0.1, 0.9])
+
+
+def test_rejects_predicted_kd_below_min():
+    with pytest.raises(ValueError):
+        evaluate_predictions([0.1, -0.1], [0.1, 0.9])
+
+
+def test_rejects_actual_kd_out_of_range():
+    with pytest.raises(ValueError):
+        evaluate_predictions([0.1, 0.9], [0.1, 1.2])
+
+
+def test_boundary_values_are_inclusive():
+    # exactly 0.0 and exactly 1.0 should NOT raise -- valid_range is inclusive
+    metrics = evaluate_predictions([0.0, 1.0], [0.0, 1.0])
+    assert metrics.n == 2
+
+
+def test_out_of_range_error_message_identifies_offending_value():
+    with pytest.raises(ValueError, match=r"predicted_kd"):
+        evaluate_predictions([0.1, 5.0, 0.3], [0.1, 0.2, 0.3])
+
+
+def test_custom_valid_range_allows_percent_scale_data():
+    predicted = [10.0, 50.0, 90.0]
+    actual = [15.0, 45.0, 95.0]
+    metrics = evaluate_predictions(
+        predicted, actual, hit_threshold=70.0, valid_range=(0.0, 100.0)
+    )
+    assert metrics.n == 3
+    assert metrics.hit_threshold == 70.0
+
+
+def test_percent_scale_data_rejected_under_default_range():
+    # same data as above, but without overriding valid_range -- should be
+    # caught by the default (0, 1) bound rather than silently accepted.
+    predicted = [10.0, 50.0, 90.0]
+    actual = [15.0, 45.0, 95.0]
+    with pytest.raises(ValueError):
+        evaluate_predictions(predicted, actual)
+
+
+def test_rejects_hit_threshold_outside_valid_range():
+    # forgetting to also override valid_range when using a percent-scale
+    # hit_threshold is exactly the mistake this check catches.
+    with pytest.raises(ValueError, match="hit_threshold"):
+        evaluate_predictions([0.1, 0.5, 0.9], [0.1, 0.5, 0.9], hit_threshold=70.0)
+
+
+def test_rejects_invalid_valid_range_ordering():
+    with pytest.raises(ValueError, match="valid_range"):
+        evaluate_predictions([0.1, 0.2], [0.1, 0.2], valid_range=(1.0, 0.0))
+
+
+def test_rejects_nan_in_predicted_kd():
+    with pytest.raises(ValueError):
+        evaluate_predictions([0.1, float("nan")], [0.1, 0.2])
+
+
+def test_rejects_nan_in_actual_kd():
+    with pytest.raises(ValueError):
+        evaluate_predictions([0.1, 0.2], [0.1, float("nan")])
