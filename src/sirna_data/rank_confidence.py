@@ -167,9 +167,13 @@ def _probability_top_in_top_k_given_r(k: int, n_items: int, r: float) -> float:
     sd_p = math.sqrt(max(0.0, 1.0 - r * r))
 
     if sd_p == 0.0:
-        # r = +-1: P is deterministic given t_hat, no integral needed.
+        # r = +-1: P is deterministic given t_hat, no integral needed. Clamp
+        # like the general branch below -- log-sum-exp accumulation in
+        # _log_binomial_cdf can overshoot 1.0 by a floating-point hair
+        # (e.g. 1.0000000000000004) since it should mathematically sum to
+        # exactly <= 1 but isn't guaranteed to in finite precision.
         q = 1.0 - _NORMAL.cdf(mean_p)
-        return math.exp(_log_binomial_cdf(k - 1, n_items - 1, q))
+        return min(1.0, max(0.0, math.exp(_log_binomial_cdf(k - 1, n_items - 1, q))))
 
     # Integrate P(rank <= k | P = p) * density(p) over p, reparameterized as
     # p = mean_p + sd_p * z with z ~ N(0, 1), via Simpson's rule. phi(z) is
@@ -198,10 +202,23 @@ def probability_true_top_in_predicted_top_k(
     """P(the true rank-1 item's predicted rank is <= k), under this module's
     model (see module docstring) for n_items total items correlated at
     either Spearman's rho (`spcc`) or Pearson's r (`pcc`) -- exactly one of
-    the two must be given.
+    the two must be given, each validated to be in [-1, 1] (via
+    `_resolve_pearson_r`, which raises `ValueError` otherwise).
+
+    The returned probability is itself checked to be a valid probability
+    (in [0, 1], not NaN) before returning -- `_probability_top_in_top_k_given_r`
+    already clamps its numerical-integration result into [0, 1], so this
+    should never actually fire, but it's cheap insurance against a future
+    change to the model quietly returning something nonsensical.
     """
     r = _resolve_pearson_r(spcc, pcc)
-    return _probability_top_in_top_k_given_r(k, n_items, r)
+    prob = _probability_top_in_top_k_given_r(k, n_items, r)
+    if math.isnan(prob) or not 0.0 <= prob <= 1.0:
+        raise RuntimeError(
+            f"Computed probability {prob!r} is not a valid probability (must be in [0, 1]) "
+            "-- this indicates a bug in the underlying model, not bad input; please report it."
+        )
+    return prob
 
 
 def min_top_k_for_confidence(

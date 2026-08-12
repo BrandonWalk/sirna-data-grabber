@@ -232,3 +232,42 @@ def test_probability_requires_exactly_one_of_spcc_or_pcc():
         probability_true_top_in_predicted_top_k(10, 100)
     with pytest.raises(ValueError):
         probability_true_top_in_predicted_top_k(10, 100, spcc=0.5, pcc=0.5)
+
+
+@pytest.mark.parametrize("bad_spcc", [-1.1, 1.1, float("inf"), float("-inf")])
+def test_probability_rejects_bad_spcc(bad_spcc):
+    with pytest.raises(ValueError):
+        probability_true_top_in_predicted_top_k(10, 100, spcc=bad_spcc)
+
+
+@pytest.mark.parametrize("bad_pcc", [-1.1, 1.1, float("inf"), float("-inf")])
+def test_probability_rejects_bad_pcc(bad_pcc):
+    with pytest.raises(ValueError):
+        probability_true_top_in_predicted_top_k(10, 100, pcc=bad_pcc)
+
+
+# --------------------------------------------------------------------------
+# probability_true_top_in_predicted_top_k always returns a valid probability
+# --------------------------------------------------------------------------
+
+
+def test_probability_is_always_a_valid_probability():
+    for n_items in (2, 5, 50, 1000):
+        for k in (1, max(1, n_items // 2), n_items - 1, n_items):
+            for corr_kwargs in (
+                {"spcc": -0.99},
+                {"spcc": 0.0},
+                {"spcc": 0.5},
+                {"spcc": 0.99},
+                {"spcc": -1.0},
+                {"spcc": 1.0},
+                {"pcc": -0.99},
+                {"pcc": 0.0},
+                {"pcc": 0.5},
+                {"pcc": 0.99},
+                {"pcc": -1.0},
+                {"pcc": 1.0},
+            ):
+                prob = probability_true_top_in_predicted_top_k(k, n_items, **corr_kwargs)
+                assert not math.isnan(prob)
+                assert 0.0 <= prob <= 1.0
