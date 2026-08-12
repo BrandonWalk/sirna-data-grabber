@@ -40,6 +40,7 @@ lint = ["ruff>=0.6", "mypy>=1.10", "pandas-stubs", "types-requests"]
 # standard library.
 [project.scripts]
 sirna-data-fetch = "sirna_data.fetch.cli:main"
+sirna-rank-confidence = "sirna_data.rank_confidence_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
