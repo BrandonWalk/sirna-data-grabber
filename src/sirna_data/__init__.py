@@ -13,6 +13,8 @@ NCBI, for callers that only have a gene symbol.
 """
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from .evaluation import GeneCorrelation, PredictionMetrics, evaluate_predictions
 from .ncbi_fetch import FetchedTranscript, GeneNotFoundError, fetch_mrna_by_gene
 from .rank_confidence import (
@@ -38,4 +40,10 @@ __all__ = [
     "GeneCorrelation",
 ]
 
-__version__ = "0.1.0"
+try:
+    __version__ = version("sirna-data-grabber")
+except PackageNotFoundError:
+    # Not installed as a package (e.g. running from a raw checkout without
+    # `pip install -e .`) -- avoid hardcoding a string here that would just
+    # go stale at the next release like the old __version__ = "0.1.0" did.
+    __version__ = "0.0.0+unknown"
