@@ -61,7 +61,15 @@ select = ["E", "F", "I", "UP", "B"]
 "tests/conftest.py" = ["E501"]
 
 [tool.mypy]
-python_version = "3.10"
+# Matches the Python version the `lint` CI job actually runs mypy under
+# (.github/workflows/tests.yml), not requires-python's floor of 3.10 --
+# mypy uses this to decide what stub-file syntax to accept too (not just
+# our own code), and newer numpy's bundled stubs use Python 3.12-only
+# syntax (PEP 695 `type` statements) that a python_version=3.10 setting
+# rejects outright before ever reaching our code. Real cross-version
+# compatibility (3.10/3.11/3.12) is already verified by the separate
+# `test` job's pytest matrix, so this doesn't weaken that guarantee.
+python_version = "3.12"
 files = ["src"]
 ignore_missing_imports = true
 warn_unused_ignores = true
