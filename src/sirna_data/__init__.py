@@ -14,6 +14,11 @@ NCBI, for callers that only have a gene symbol.
 from __future__ import annotations
 
 from .ncbi_fetch import FetchedTranscript, GeneNotFoundError, fetch_mrna_by_gene
+from .rank_confidence import (
+    min_top_k_for_confidence,
+    probability_true_top_in_predicted_top_k,
+    spearman_to_pearson,
+)
 from .raw_loader import DATA_DIR, SiRNARecord, load_records, read_fasta
 
 __all__ = [
@@ -24,6 +29,9 @@ __all__ = [
     "fetch_mrna_by_gene",
     "FetchedTranscript",
     "GeneNotFoundError",
+    "min_top_k_for_confidence",
+    "probability_true_top_in_predicted_top_k",
+    "spearman_to_pearson",
 ]
 
 __version__ = "0.1.0"
