@@ -23,6 +23,7 @@ from .rank_confidence import (
     spearman_to_pearson,
 )
 from .raw_loader import DATA_DIR, SiRNARecord, load_records, read_fasta
+from .splitting import leave_n_genes_out, train_test_split
 
 __all__ = [
     "load_records",
@@ -38,6 +39,8 @@ __all__ = [
     "evaluate_predictions",
     "PredictionMetrics",
     "GeneCorrelation",
+    "train_test_split",
+    "leave_n_genes_out",
 ]
 
 try:
