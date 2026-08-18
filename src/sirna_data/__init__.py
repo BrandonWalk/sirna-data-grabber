@@ -19,6 +19,8 @@ from .evaluation import GeneCorrelation, PredictionMetrics, evaluate_predictions
 from .ncbi_fetch import FetchedTranscript, GeneNotFoundError, fetch_mrna_by_gene
 from .rank_confidence import (
     min_top_k_for_confidence,
+    min_top_k_for_confidence_multi,
+    probability_curves_for_pccs,
     probability_true_top_in_predicted_top_k,
     spearman_to_pearson,
 )
@@ -34,6 +36,8 @@ __all__ = [
     "FetchedTranscript",
     "GeneNotFoundError",
     "min_top_k_for_confidence",
+    "min_top_k_for_confidence_multi",
+    "probability_curves_for_pccs",
     "probability_true_top_in_predicted_top_k",
     "spearman_to_pearson",
     "evaluate_predictions",
