@@ -176,6 +176,12 @@ data/
 src/sirna_data/
   raw_loader.py               load + merge every source into SiRNARecord rows
   ncbi_fetch.py                fetch a gene's RefSeq mRNA transcript by symbol
+  sequence_utils.py            DNA/RNA sequence helpers (to_rna, to_dna, transcribe_template_to_mrna)
+  splitting.py                 train_test_split / leave_n_genes_out dataset splitters
+  evaluation.py                evaluate_predictions + PredictionMetrics/GeneCorrelation
+  rank_confidence.py           probability/confidence model for "how many top-K predictions to check"
+  rank_confidence_cli.py       `sirna-rank-confidence` entry point ([project.scripts])
+  rank_confidence_plot.py      optional matplotlib plotting for rank_confidence (requires [plot] extra)
   __init__.py                  public API
   fetch/                       sirna-data-fetch CLI + per-source fetchers (see Install below)
     cli.py                       `sirna-data-fetch` entry point ([project.scripts])
@@ -186,6 +192,13 @@ src/sirna_data/
 tests/
   test_raw_loader.py          unit tests for raw_loader.py (fixtures, no real data needed)
   test_ncbi_fetch.py          unit tests for ncbi_fetch.py (mocked HTTP calls)
+  test_fetch_cli.py           unit tests for fetch/cli.py
+  test_sequence_utils.py      unit tests for sequence_utils.py
+  test_splitting.py           unit tests for splitting.py
+  test_evaluation.py          unit tests for evaluation.py
+  test_rank_confidence.py     unit tests for rank_confidence.py
+  test_rank_confidence_cli.py unit tests for rank_confidence_cli.py
+  test_rank_confidence_plot.py unit tests for rank_confidence_plot.py (skipped without the [plot] extra)
   conftest.py                 shared pytest fixtures
 ```
 
@@ -310,6 +323,73 @@ group -- so every gene appears in exactly one test fold across the full
 iteration (`n=1` reproduces classic leave-one-gene-out CV). If the gene
 count isn't evenly divisible by `n`, the last fold holds out fewer than `n`
 genes.
+
+### Rank confidence: how many top predictions do you need to check?
+
+```python
+from sirna_data import min_top_k_for_confidence, probability_true_top_in_predicted_top_k
+
+# Given only a correlation between a model's predicted and true rankings of
+# 4561 candidate items, how many of the top-predicted items do you need to
+# check to be 95% confident the true best one is among them?
+min_top_k_for_confidence(n_items=4561, confidence=0.95, pcc=0.3686)
+
+# Or ask it the other way: given you check the top 50, how confident can
+# you be that the true best item is in there?
+probability_true_top_in_predicted_top_k(50, 4561, pcc=0.3686)
+```
+
+Both take the correlation as either `pcc` (Pearson's r, used directly) or
+`spcc` (Spearman's rho, converted internally) -- exactly one of the two.
+`top_n` (default 1) generalizes the question from "is the single true best
+item captured" to "is at least one of the true top `top_n` items captured"
+-- pass e.g. `top_n=10` to ask about catching any of the top 10, which
+needs a smaller K for the same confidence. See `sirna_data.rank_confidence`'s
+module docstring for the full model and its caveats -- this is a planning
+heuristic (generally conservative), not a certified statistical bound.
+
+Also installed: the `sirna-rank-confidence` CLI --
+`sirna-rank-confidence --pcc 0.3686 --n-items 4561 --confidence 0.99 0.95 0.9`.
+
+#### Comparing multiple models at once
+
+```python
+from sirna_data import min_top_k_for_confidence_multi, probability_curves_for_pccs
+
+pccs = [0.2, 0.4, 0.6]  # one Pearson correlation per model to compare
+
+# {pcc: min top-K needed for 95% confidence}, one entry per model
+min_top_k_for_confidence_multi(pccs, n_items=4561, confidence=0.95)
+
+# {pcc: [probability at each K in a default spread of K's]}, one entry per model
+probability_curves_for_pccs(pccs, n_items=4561)
+```
+
+Both run the single-model function above once per PCC in the list --
+`min_top_k_for_confidence_multi` for a straight side-by-side "tests needed"
+comparison, `probability_curves_for_pccs` for the full probability-vs-K
+curve each model traces out (this is what the plotting function below
+draws). Pass `k_values` to either the fixed set of K's you want the
+comparison at instead of the default spread.
+
+#### Plotting probability vs. number of tests
+
+```python
+from sirna_data.rank_confidence_plot import plot_probability_vs_num_tests
+
+plot_probability_vs_num_tests(pccs, n_items=4561, save_path="curves.png")
+```
+
+One curve per PCC, x-axis is K (number of top-predicted items checked),
+y-axis is the probability of capturing at least one true top-`top_n` item
+at that K -- lets you see at a glance how the number of tests needed
+relates to each model's correlation. Requires the optional `plot` extra
+(`pip install sirna-data-grabber[plot]`) for matplotlib -- not installed by
+the core package, and this function lives in its own
+`sirna_data.rank_confidence_plot` module (not `sirna_data`'s top-level
+import) specifically so nothing else in this package needs matplotlib.
+Returns the `matplotlib.axes.Axes` for further customization; pass an
+existing `ax=` to draw on it instead of creating a new figure.
 
 ## Using this from another project
 

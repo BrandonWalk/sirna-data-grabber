@@ -5,8 +5,11 @@ import math
 import pytest
 
 from sirna_data.rank_confidence import (
+    _default_k_values,
     _log_binomial_cdf,
     min_top_k_for_confidence,
+    min_top_k_for_confidence_multi,
+    probability_curves_for_pccs,
     probability_true_top_in_predicted_top_k,
     spearman_to_pearson,
 )
@@ -271,3 +274,166 @@ def test_probability_is_always_a_valid_probability():
                 prob = probability_true_top_in_predicted_top_k(k, n_items, **corr_kwargs)
                 assert not math.isnan(prob)
                 assert 0.0 <= prob <= 1.0
+
+
+# --------------------------------------------------------------------------
+# top_n generalization
+# --------------------------------------------------------------------------
+
+
+def test_top_n_default_is_one():
+    prob_default = probability_true_top_in_predicted_top_k(10, 100, spcc=0.4)
+    prob_explicit = probability_true_top_in_predicted_top_k(10, 100, top_n=1, spcc=0.4)
+    assert prob_default == pytest.approx(prob_explicit)
+
+    k_default = min_top_k_for_confidence(n_items=200, confidence=0.9, spcc=0.4)
+    k_explicit = min_top_k_for_confidence(n_items=200, confidence=0.9, top_n=1, spcc=0.4)
+    assert k_default == k_explicit
+
+
+def test_top_n_increasing_never_decreases_probability():
+    n_items, k = 200, 15
+    probs = [
+        probability_true_top_in_predicted_top_k(k, n_items, top_n=n, spcc=0.4)
+        for n in (1, 2, 5, 10, 20)
+    ]
+    assert probs == sorted(probs)
+
+
+def test_top_n_equal_n_items_is_always_one_for_k_geq_one():
+    n_items = 30
+    for k in (1, 5, n_items):
+        assert probability_true_top_in_predicted_top_k(
+            k, n_items, top_n=n_items, pcc=0.1
+        ) == pytest.approx(1.0)
+
+
+def test_top_n_single_item_dataset_is_always_one():
+    assert probability_true_top_in_predicted_top_k(1, 1, top_n=1, pcc=0.5) == pytest.approx(1.0)
+
+
+def test_min_top_k_decreases_as_top_n_grows():
+    n_items, confidence = 300, 0.9
+    ks = [
+        min_top_k_for_confidence(n_items=n_items, confidence=confidence, top_n=n, spcc=0.3)
+        for n in (1, 3, 5, 10)
+    ]
+    assert ks == sorted(ks, reverse=True)
+
+
+@pytest.mark.parametrize("bad_top_n", [0, -1])
+def test_top_n_rejects_non_positive(bad_top_n):
+    with pytest.raises(ValueError):
+        probability_true_top_in_predicted_top_k(5, 100, top_n=bad_top_n, pcc=0.5)
+    with pytest.raises(ValueError):
+        min_top_k_for_confidence(n_items=100, confidence=0.9, top_n=bad_top_n, pcc=0.5)
+
+
+def test_top_n_rejects_greater_than_n_items():
+    with pytest.raises(ValueError):
+        probability_true_top_in_predicted_top_k(5, 100, top_n=101, pcc=0.5)
+    with pytest.raises(ValueError):
+        min_top_k_for_confidence(n_items=100, confidence=0.9, top_n=101, pcc=0.5)
+
+
+# --------------------------------------------------------------------------
+# _default_k_values
+# --------------------------------------------------------------------------
+
+
+def test_default_k_values_small_n_items_returns_full_range():
+    assert _default_k_values(10) == list(range(1, 11))
+
+
+def test_default_k_values_large_n_items_is_bounded_and_spans_range():
+    values = _default_k_values(10_000)
+    assert values[0] == 1
+    assert values[-1] == 10_000
+    assert values == sorted(set(values))  # strictly increasing, deduplicated
+    assert len(values) <= 60
+
+
+def test_default_k_values_rejects_bad_n_items():
+    with pytest.raises(ValueError):
+        _default_k_values(0)
+
+
+# --------------------------------------------------------------------------
+# probability_curves_for_pccs: multiple models' PCCs at once
+# --------------------------------------------------------------------------
+
+
+def test_probability_curves_for_pccs_shape_and_content():
+    pccs = [0.1, 0.5, 0.9]
+    n_items = 200
+    curves = probability_curves_for_pccs(pccs, n_items)
+    assert set(curves) == set(pccs)
+    expected_k_values = _default_k_values(n_items)
+    for p in pccs:
+        assert len(curves[p]) == len(expected_k_values)
+        assert curves[p] == [
+            probability_true_top_in_predicted_top_k(k, n_items, pcc=p) for k in expected_k_values
+        ]
+
+
+def test_probability_curves_for_pccs_higher_pcc_is_never_lower_at_same_k():
+    n_items = 150
+    curves = probability_curves_for_pccs([0.0, 0.3, 0.6, 0.9], n_items, k_values=[5, 20, 50])
+    for i in range(len(curves[0.0])):
+        values_at_k = [curves[p][i] for p in (0.0, 0.3, 0.6, 0.9)]
+        assert values_at_k == sorted(values_at_k)
+
+
+def test_probability_curves_for_pccs_respects_explicit_k_values():
+    curves = probability_curves_for_pccs([0.2], 500, k_values=[1, 100, 500])
+    assert len(curves[0.2]) == 3
+
+
+def test_probability_curves_for_pccs_passes_through_top_n():
+    n_items, k = 200, 10
+    curves_top1 = probability_curves_for_pccs([0.4], n_items, k_values=[k])
+    curves_top5 = probability_curves_for_pccs([0.4], n_items, k_values=[k], top_n=5)
+    assert curves_top5[0.4][0] > curves_top1[0.4][0]
+
+
+def test_probability_curves_for_pccs_rejects_empty_pccs():
+    with pytest.raises(ValueError):
+        probability_curves_for_pccs([], 100)
+
+
+def test_probability_curves_for_pccs_rejects_empty_k_values():
+    with pytest.raises(ValueError):
+        probability_curves_for_pccs([0.5], 100, k_values=[])
+
+
+# --------------------------------------------------------------------------
+# min_top_k_for_confidence_multi: multiple models' PCCs at once
+# --------------------------------------------------------------------------
+
+
+def test_min_top_k_for_confidence_multi_matches_individual_calls():
+    pccs = [0.1, 0.4, 0.8]
+    n_items, confidence = 300, 0.9
+    result = min_top_k_for_confidence_multi(pccs, n_items, confidence)
+    assert result == {
+        p: min_top_k_for_confidence(n_items, confidence, pcc=p) for p in pccs
+    }
+
+
+def test_min_top_k_for_confidence_multi_higher_pcc_needs_fewer_or_equal_tests():
+    pccs = [0.0, 0.3, 0.6, 0.9]
+    result = min_top_k_for_confidence_multi(pccs, 300, 0.9)
+    ks = [result[p] for p in pccs]
+    assert ks == sorted(ks, reverse=True)
+
+
+def test_min_top_k_for_confidence_multi_passes_through_top_n():
+    pccs, n_items, confidence = [0.4], 300, 0.9
+    k_top1 = min_top_k_for_confidence_multi(pccs, n_items, confidence)[0.4]
+    k_top5 = min_top_k_for_confidence_multi(pccs, n_items, confidence, top_n=5)[0.4]
+    assert k_top5 <= k_top1
+
+
+def test_min_top_k_for_confidence_multi_rejects_empty_pccs():
+    with pytest.raises(ValueError):
+        min_top_k_for_confidence_multi([], 100, 0.9)

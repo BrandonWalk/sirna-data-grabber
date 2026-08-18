@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sirna-data-grabber"
-version = "0.2.2"
+version = "0.2.3"
 description = "Reusable loader for the siRNA knockdown-efficacy dataset (siRNAEfficacyDB + supplementary sources), plus the fetchers that built it."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -31,6 +31,10 @@ Issues = "https://github.com/BrandonWalk/sirna-data-grabber/issues"
 [project.optional-dependencies]
 test = ["pytest>=8.0"]
 lint = ["ruff>=0.6", "mypy>=1.10", "pandas-stubs", "types-requests"]
+# Only needed for sirna_data.rank_confidence_plot -- everything else in the
+# package (including the rest of rank_confidence.py) has no plotting
+# dependency at all.
+plot = ["matplotlib>=3.7"]
 
 # Installed automatically -- `sirna-data-fetch` fetches every source
 # load_records() reads into a local directory (data/DATA_SOURCES.md), so a
