@@ -1,5 +1,10 @@
 # sirna-data-grabber
 
+[![Tests](https://github.com/BrandonWalk/sirna-data-grabber/actions/workflows/tests.yml/badge.svg)](https://github.com/BrandonWalk/sirna-data-grabber/actions/workflows/tests.yml)
+[![PyPI version](https://img.shields.io/pypi/v/sirna-data-grabber.svg)](https://pypi.org/project/sirna-data-grabber/)
+[![Python versions](https://img.shields.io/pypi/pyversions/sirna-data-grabber.svg)](https://pypi.org/project/sirna-data-grabber/)
+[![License](https://img.shields.io/pypi/l/sirna-data-grabber.svg)](LICENSE)
+
 A standalone siRNA knockdown-efficacy dataset: the raw data files, full
 provenance/license documentation, and a small reusable Python package
 (`sirna_data`) for loading it -- and, since `pip install sirna-data-grabber`
