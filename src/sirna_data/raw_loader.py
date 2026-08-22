@@ -88,6 +88,25 @@ class SiRNARecord:
     label: float
     technology: str  # assay type (e.g. "Luciferase reporter assay") -- see data/DATA_SOURCES.md
     source: str  # provenance, e.g. "siRNAEfficacyDB" or "Monopoli2023" -- see data/DATA_SOURCES.md
+    # Chemical modification -- unset (False/None) for every source unless a
+    # loader below explicitly says otherwise. Most sources in this dataset
+    # are standard/unmodified synthetic siRNA; a minority (CMsiRNAdb,
+    # Monopoli2023) are chemically modified therapeutic-style constructs.
+    # See "Chemical modification data" in data/DATA_SOURCES.md.
+    is_modified: bool = False
+    # Short human-readable summary of the chemistry class, e.g.
+    # "2'-OMe/2'-F/PS (per-position)" or a dataset-level architecture note
+    # when no per-position detail is available. None when is_modified=False.
+    modification_chemistry: str | None = None
+    # Per-position modification name for each nt of `guide_seq`'s
+    # corresponding sense strand / of `guide_seq` itself, aligned 1:1 by
+    # index (entry i describes position i of the sequence); None at a
+    # position means that nt is an unmodified/natural ribonucleotide. Only
+    # populated for sources with real per-position annotation in the raw
+    # data (currently CMsiRNAdb); None (the whole field, not just entries)
+    # when no per-position detail exists for this record.
+    sense_modifications: tuple[str | None, ...] | None = None
+    antisense_modifications: tuple[str | None, ...] | None = None
 
 
 def _locate_window(
@@ -185,6 +204,62 @@ def _load_monopoli_records(flank_nt: int, data_dir: Path | None = None) -> list[
                 label=100.0 - float(row["Reporter_Remaining_Pct"]),
                 technology="Dual-luciferase reporter assay (modified sdRNA)",
                 source="Monopoli2023",
+                is_modified=True,
+                # Dataset-level chemistry note, not per-position: the paper
+                # describes a single fixed sdRNA architecture applied
+                # uniformly to all 20 rows, but doesn't give a per-position
+                # modification map the way CMsiRNAdb's raw table does.
+                modification_chemistry=(
+                    "sdRNA: heavy 2'-F/2'-OMe/phosphorothioate, "
+                    "cholesterol-conjugated (dataset-level; no per-position "
+                    "map in source -- Monopoli et al. 2023)"
+                ),
+            )
+        )
+    return records
+
+
+def _load_pdcd1_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
+    """PDCD1 (PD-1) 8-siRNA panel, recovered from a deleted
+    `data/ExperimentalData/PDCD1_8.csv` in the git history of
+    github.com/ChengkuiZhao/siRNABERT (commit f3254ee, before it was
+    removed in d2ad931). Dual-readout luciferase + qPCR knockdown assay;
+    every sense sequence verified by exact substring match against the
+    real NM_005018.3 (PDCD1) mRNA transcript before being trusted -- see
+    data/DATA_SOURCES.md. +1 gene (PDCD1), not present in any other
+    integrated source.
+    """
+    data_dir = data_dir or DATA_DIR
+    csv_path = data_dir / "pdcd1_extra.csv"
+    fasta_path = data_dir / "pdcd1_transcripts.fasta"
+    if not csv_path.exists() or not fasta_path.exists():
+        return []
+
+    df = pd.read_csv(csv_path)
+    transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
+
+    records: list[SiRNARecord] = []
+    for i, row in df.iterrows():
+        sense = _dna_to_rna(row["Sequence"])  # verified to match the transcript directly
+        guide_seq = _revcomp(sense)
+        transcript = transcripts.get(row["Accession_number"])
+        mrna_window, window_site_start, has_flanking_context = _locate_window(
+            sense, transcript, flank_nt
+        )
+        records.append(
+            SiRNARecord(
+                row_id=f"pdcd1_row{i}",
+                gene=row["Gene"],
+                accession=row["Accession_number"],
+                guide_seq=guide_seq,
+                duplex_len=len(guide_seq),  # 19nt, fully paired, no 3' overhang given
+                mrna_window=mrna_window,
+                site_start=window_site_start,
+                site_len=len(sense),
+                has_flanking_context=has_flanking_context,
+                label=float(row["Efficiency_QPCR_Pct"]),
+                technology="Dual-readout (luciferase reporter + qPCR) knockdown assay",
+                source="siRNABERT_PDCD1",
             )
         )
     return records
@@ -230,6 +305,87 @@ def _load_shabalina_records(flank_nt: int, data_dir: Path | None = None) -> list
                 label=100.0 - float(row["Activity_Remaining_Pct"]),
                 technology="Heterogeneous compilation (Shabalina et al. 2006)",
                 source="Shabalina2006",
+            )
+        )
+    return records
+
+
+def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
+    """Martinelli et al. / sirna-repro (bioRxiv, siRNAmod-derived): a 907-row
+    chemically-modified siRNA corpus that ships with NO gene-identity column
+    at all (only sequence, per-molecule modification descriptor, PCT, and a
+    source PMID/patent ID) -- unusable as-is for leave-one-gene-out
+    evaluation. 221 of the 907 rows were traced back to a real target by
+    reading each source document's methods section for its stated target,
+    then confirming that assignment by exact 19nt substring match of the
+    sense strand's non-overhang core against the real target transcript (6
+    distinct targets recovered: EGFP, ACP5, APOB, Luciferase_firefly,
+    Luciferase_renilla, NPY). The remaining ~686 rows -- most notably a
+    single patent that is 60% of the corpus -- could not be resolved this
+    way and are not included here; see data/DATA_SOURCES.md for per-target
+    provenance and data/DATA_SOURCE_LEDGER.md for what's still unresolved
+    and why.
+
+    Unlike every other loader in this file, both strands are taken directly
+    from the source (already paired, including each row's own 3' overhang)
+    rather than reverse-complementing one from the other -- the source gives
+    real per-strand modification detail that a derived antisense would
+    lose. Modification descriptors here are per-molecule free text (e.g.
+    "locked nucleic acid", "2-fluoro* 2-o-methyl"), not per-position, so
+    `sense_modifications`/`antisense_modifications` stay None; only the
+    coarser `modification_chemistry` summary is populated.
+    """
+    data_dir = data_dir or DATA_DIR
+    csv_path = data_dir / "martinelli_extra.csv"
+    fasta_path = data_dir / "martinelli_transcripts.fasta"
+    if not csv_path.exists() or not fasta_path.exists():
+        return []
+
+    df = pd.read_csv(csv_path)
+    transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
+
+    records: list[SiRNARecord] = []
+    for _, row in df.iterrows():
+        sense = str(row["Sequence"]).strip().upper().replace("T", "U")
+        # Only the first 19nt ("core") is expected to match the transcript --
+        # the trailing 1-2nt are each row's own synthetic 3' overhang, not
+        # genomic sequence.
+        sense_core = sense[:19]
+        guide_seq = str(row["Sequence_antisense"]).strip().upper().replace("T", "U")
+        transcript = transcripts.get(row["Accession_number"])
+        mrna_window, window_site_start, has_flanking_context = _locate_window(
+            sense_core, transcript, flank_nt
+        )
+
+        sense_mod = str(row["Modification_sense"]).strip()
+        antisense_mod = str(row["Modification_antisense"]).strip()
+        mods = sorted({m for m in (sense_mod, antisense_mod) if m and m != "0"})
+        is_modified = len(mods) > 0
+        chemistry = (
+            " / ".join(mods) + " (per-molecule, Martinelli/sirna-repro)"
+            if is_modified
+            else None
+        )
+
+        records.append(
+            SiRNARecord(
+                row_id=f"martinelli_{row['Experiment_ID']}",
+                gene=row["Gene"],
+                accession=row["Accession_number"],
+                guide_seq=guide_seq,
+                duplex_len=min(19, len(guide_seq)),
+                mrna_window=mrna_window,
+                site_start=window_site_start,
+                site_len=len(sense_core),
+                has_flanking_context=has_flanking_context,
+                label=float(row["PCT"]),
+                technology=(
+                    "Reporter/qPCR knockdown assay (chemically modified siRNA; "
+                    "Martinelli et al./sirna-repro)"
+                ),
+                source="Martinelli_sirna_repro",
+                is_modified=is_modified,
+                modification_chemistry=chemistry,
             )
         )
     return records
@@ -304,6 +460,95 @@ def _cmsirnadb_locate_core(
     return sense_full[:core_len]
 
 
+_CMSIRNADB_BARE_BASES = frozenset({"A", "C", "G", "U", "T"})
+
+
+def _cmsirnadb_parse_modification_types(
+    types_field: str, seq_len: int) -> tuple[str | None, ...] | None:
+    """Parse a raw `Modification_Types_{Sense,Antisense}_strand` cell, e.g.
+    `"1*2'-O-Methylcytidine || 2*2'-O-Methyladenosine || 3*G || ..."`, into a
+    per-position tuple aligned to the FULL raw strand (not any windowed
+    core). A bare base letter at a position (the source's own sentinel for
+    "no annotation there") maps to None (unmodified); anything else is kept
+    as the modified-nucleoside name verbatim, exactly as CMsiRNAdb gives it.
+
+    Returns None (not a tuple of Nones) if the field is missing/empty or
+    doesn't cleanly parse into exactly `seq_len` positions numbered 1..N --
+    treated as "no usable modification annotation for this row" rather than
+    guessed at, matching this module's usual when-the-raw-data-has-a-
+    data-entry-issue-on-this-row: skip/fall back, don't guess.
+    """
+    if not isinstance(types_field, str) or not types_field.strip():
+        return None
+    parsed: dict[int, str] = {}
+    for part in types_field.split("||"):
+        part = part.strip()
+        pos_str, sep, value = part.partition("*")
+        if not sep or not pos_str.strip().isdigit():
+            return None
+        parsed[int(pos_str.strip())] = value.strip()
+    if set(parsed) != set(range(1, seq_len + 1)):
+        return None
+    return tuple(
+        None if parsed[i].upper() in _CMSIRNADB_BARE_BASES else parsed[i]
+        for i in range(1, seq_len + 1)
+    )
+
+
+def _cmsirnadb_align_modifications(
+    seq_full_rna: str, target: str, types_field: str) -> tuple[str | None, ...] | None:
+    """Locate `target` (the core/guide sequence this project actually
+    stores) as a substring of `seq_full_rna` (the raw strand the source's
+    position-indexed modification annotation is keyed to), and slice the
+    parsed per-position modification list down to that window so it lines
+    up 1:1 with `target`. Returns None if the annotation doesn't parse or
+    `target` isn't found in `seq_full_rna` (e.g. a data-entry mismatch
+    between the sequence and modification columns) -- same graceful,
+    don't-guess fallback as everywhere else in this loader.
+    """
+    parsed = _cmsirnadb_parse_modification_types(types_field, len(seq_full_rna))
+    if parsed is None:
+        return None
+    offset = seq_full_rna.find(target)
+    if offset == -1:
+        return None
+    return parsed[offset : offset + len(target)]
+
+
+def _cmsirnadb_chemistry_summary(
+    sense_mods: tuple[str | None, ...] | None,
+    antisense_mods: tuple[str | None, ...] | None,
+) -> tuple[bool, str | None]:
+    """Roll a record's per-position modification tuples up into
+    (is_modified, short human-readable chemistry summary). Classifies each
+    distinct modified-nucleoside name into a coarse family by substring
+    match (2'-OMe, 2'-F, 2'-deoxy, phosphorothioate backbone, 5' vinyl-
+    phosphonate cap, inverted-abasic cap, lipid/GalNAc conjugate) so the
+    summary stays short and readable even though CMsiRNAdb's raw chemistry
+    names are quite granular (e.g. distinguishing all 4 bases per family)."""
+    names = [n for n in (*(sense_mods or ()), *(antisense_mods or ())) if n]
+    if not names:
+        return False, None
+    text = " ".join(names).lower()
+    families = []
+    if "2'-o-methyl" in text:
+        families.append("2'-OMe")
+    if "2'-fluoro" in text:
+        families.append("2'-F")
+    if "2'-deoxy" in text:
+        families.append("2'-deoxy")
+    if "phosphorothioate" in text:
+        families.append("PS-backbone")
+    if "vinyl phosphonate" in text:
+        families.append("5'-VP cap")
+    if "inverted abasic" in text:
+        families.append("abasic cap")
+    if "hexadecyl" in text or "cholesterol" in text or "galnac" in text:
+        families.append("lipid/GalNAc-conjugate")
+    summary = "/".join(dict.fromkeys(families)) if families else "modified (uncategorized)"
+    return True, f"{summary} (per-position, CMsiRNAdb)"
+
+
 def _load_cmsirnadb_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
     """CMsiRNAdb, human PCSK9 subset -- derived at load time from the raw
     master TSV (see the module-level CMsiRNAdb note above for why). Only
@@ -326,6 +571,13 @@ def _load_cmsirnadb_records(flank_nt: int, data_dir: Path | None = None) -> list
       data/DATA_SOURCES.md).
     - Not deduplicated/collapsed (unlike _load_cmsirnadb_full_records):
       repeated measurements of the same duplex are kept as separate rows.
+    - **Chemical modification**: the raw table's per-position modification
+      columns (real 2'-O-Me/2'-F/2'-deoxy/phosphorothioate/vinyl-phosphonate
+      -cap/lipid-conjugate chemistry, not just a "this source is modified"
+      flag) are parsed and attached via `is_modified`/`modification_chemistry`
+      /`sense_modifications`/`antisense_modifications` when a row's
+      annotation cleanly aligns with the sequence we located -- see
+      `_cmsirnadb_align_modifications` and data/DATA_SOURCES.md.
     """
     data_dir = data_dir or DATA_DIR
     fasta_path = data_dir / "cmsirnadb_transcripts.fasta"
@@ -354,13 +606,22 @@ def _load_cmsirnadb_records(flank_nt: int, data_dir: Path | None = None) -> list
         mrna_window, window_site_start, has_flanking_context = _locate_window(
             sense, canonical_transcript, flank_nt
         )
+        sense_mods = _cmsirnadb_align_modifications(
+            _dna_to_rna(str(row["Sense_seqence"])), sense,
+            str(row.get("Modification_Types_Sense_strand", "")),
+        )
+        antisense_mods = _cmsirnadb_align_modifications(
+            _dna_to_rna(str(row["Antisense_seqence"])), guide_seq,
+            str(row.get("Modification_Types_Antisense_strand", "")),
+        )
+        is_modified, chemistry = _cmsirnadb_chemistry_summary(sense_mods, antisense_mods)
         records.append(
             SiRNARecord(
                 row_id=f"cmsirnadb_row{i}",
                 gene="PCSK9",
                 accession=CMSIRNADB_PCSK9_ACCESSION,
                 guide_seq=guide_seq,
-                duplex_len=len(guide_seq),  # chemical modification/overhang detail not modeled
+                duplex_len=len(guide_seq),  # overhang length not separately modeled
                 mrna_window=mrna_window,
                 site_start=window_site_start,
                 site_len=len(sense),
@@ -368,6 +629,10 @@ def _load_cmsirnadb_records(flank_nt: int, data_dir: Path | None = None) -> list
                 label=float(row["_inhibition"]),
                 technology=f"CMsiRNAdb patent-derived, chemically modified ({row['Cell_Type']})",
                 source="CMsiRNAdb",
+                is_modified=is_modified,
+                modification_chemistry=chemistry,
+                sense_modifications=sense_mods,
+                antisense_modifications=antisense_mods,
             )
         )
     return records
@@ -438,13 +703,27 @@ def _load_cmsirnadb_full_records(
         mrna_window, window_site_start, has_flanking_context = _locate_window(
             sense, transcript, flank_nt
         )
+        # Modification annotation comes from the representative row only
+        # (same one `technology`'s Cell_Type is taken from) -- replicate
+        # measurements of one duplex share the same chemical entity, so
+        # this doesn't lose per-record information the way collapsing the
+        # label itself would.
+        sense_mods = _cmsirnadb_align_modifications(
+            _dna_to_rna(str(row["Sense_seqence"])), sense,
+            str(row.get("Modification_Types_Sense_strand", "")),
+        )
+        antisense_mods = _cmsirnadb_align_modifications(
+            _dna_to_rna(str(row["Antisense_seqence"])), guide_seq,
+            str(row.get("Modification_Types_Antisense_strand", "")),
+        )
+        is_modified, chemistry = _cmsirnadb_chemistry_summary(sense_mods, antisense_mods)
         records.append(
             SiRNARecord(
                 row_id=f"cmsirnadb_full_row{i}",
                 gene=gene,
                 accession=accession,
                 guide_seq=guide_seq,
-                duplex_len=len(guide_seq),  # chemical modification/overhang detail not modeled
+                duplex_len=len(guide_seq),  # overhang length not separately modeled
                 mrna_window=mrna_window,
                 site_start=window_site_start,
                 site_len=len(sense),
@@ -452,6 +731,10 @@ def _load_cmsirnadb_full_records(
                 label=float(median(inhibitions)),
                 technology=f"CMsiRNAdb patent-derived, chemically modified ({row['Cell_Type']})",
                 source="CMsiRNAdb_full",
+                is_modified=is_modified,
+                modification_chemistry=chemistry,
+                sense_modifications=sense_mods,
+                antisense_modifications=antisense_mods,
             )
         )
     return records
@@ -464,7 +747,9 @@ def load_records(
     data_dir: Path | str | None = None,
     include_sirna_efficacy: bool = True,
     include_monopoli: bool = True,
+    include_pdcd1: bool = True,
     include_shabalina: bool = True,
+    include_martinelli: bool = True,
     include_cmsirnadb: bool = True,
     include_cmsirnadb_full: bool = True ) -> list[SiRNARecord]:
     """Load the full merged siRNA-efficacy dataset as a list of SiRNARecord.
@@ -501,8 +786,12 @@ def load_records(
         records += _load_sirnaefficacydb_records(csv_path, fasta_path, flank_nt)
     if include_monopoli:
         records += _load_monopoli_records(flank_nt, resolved_dir)
+    if include_pdcd1:
+        records += _load_pdcd1_records(flank_nt, resolved_dir)
     if include_shabalina:
         records += _load_shabalina_records(flank_nt, resolved_dir)
+    if include_martinelli:
+        records += _load_martinelli_records(flank_nt, resolved_dir)
     if include_cmsirnadb:
         records += _load_cmsirnadb_records(flank_nt, resolved_dir)
     if include_cmsirnadb_full:

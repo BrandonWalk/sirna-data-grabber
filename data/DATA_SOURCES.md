@@ -50,8 +50,10 @@ products, so its prepared data files are not safe to vendor into this project.
   They use a cholesterol-conjugated, asymmetric (15-nt sense / 20-nt
   antisense) "sdRNA" architecture with heavy 2'-fluoro/2'-O-methyl/
   phosphorothioate modification (from Shmushkovich et al. 2018, Nucleic
-  Acids Research, the dataset Monopoli's model was trained on). RNAfold has
-  no model of these modifications, so we fold them as if they were plain
+  Acids Research, the dataset Monopoli's model was trained on). This is
+  now flagged on every record (`is_modified=True`, `modification_chemistry`
+  set -- see "Chemical modification data" below), but RNAfold still has no
+  model of these modifications, so we fold them as if they were plain
   unmodified RNA — a real approximation whose accuracy on this chemistry is
   unverified. `technology="Dual-luciferase reporter assay (modified sdRNA)"`
   falls into `graph_build.py`'s existing "other" one-hot bucket, which at
@@ -68,6 +70,51 @@ products, so its prepared data files are not safe to vendor into this project.
   requiring pipeline support we haven't built. Left for a future iteration
   if more training signal (as opposed to more evaluable genes) becomes the
   priority.
+
+## Supplementary siRNA data: PDCD1 panel (Xu, Zhao et al. 2024 / siRNABERT)
+
+- Xu, Xu, Xie, Zhao, Yu & Feng 2024, *GENE*, "BERT-siRNA: siRNA target
+  prediction based on BERT pre-trained interpretable model" (DOI
+  10.1016/j.gene.2024.148330), and the associated code repo
+  github.com/ChengkuiZhao/siRNABERT.
+- 8 siRNAs against `PDCD1` (PD-1, the immune-checkpoint gene) with a
+  dual-readout luciferase-reporter + qPCR knockdown efficiency for each —
+  the only source in this dataset with real, gene-identified, numeric
+  efficacy data for PDCD1. +1 gene (97 → **98 genes**) for
+  leave-one-gene-out CV.
+- **Recovery**: the repo's own `data/ExperimentalData/PDCD1_8.csv` was
+  deleted from `main` (commit `d2ad931`, "Delete data/ExperimentalData
+  directory") but is still present in the parent commit `f3254ee` — pulled
+  from there via `raw.githubusercontent.com/ChengkuiZhao/siRNABERT/f3254ee/
+  data/ExperimentalData/PDCD1_8.csv`, not from the current `main` tree. A
+  sibling file in the same deleted directory, `Covid19.csv` (11 candidate
+  SARS-CoV-2-targeting siRNA sequences), was also recovered but has **no
+  efficacy/label column at all** in the committed version — despite the
+  repo's own `TestExperimentalData.py` code expecting one (`values[:,4]`) —
+  so it is not usable as trainable data and was not integrated.
+- **Verification**: all 8 sense-strand sequences were confirmed by exact
+  substring match against the real NCBI RefSeq `NM_005018.3` (human PDCD1)
+  mRNA transcript before being trusted — not assumed from the file's own
+  column labels.
+- Label: the source gives both a luciferase-reporter efficiency and a qPCR
+  efficiency per row (both already expressed as 0–1 fractional knockdown,
+  e.g. `0.972747`); we store `label = 100 * Efficiency_QPCR` (mRNA-level,
+  matching this dataset's dominant `%Inhibition` convention) and keep the
+  luciferase value alongside as `Efficiency_LUC_Pct` for reference.
+- **License caveat, unresolved — committed anyway at the user's explicit
+  request**: unlike every other source in this file, the siRNABERT repo
+  ships no `LICENSE` file (all-rights-reserved by default under GitHub's
+  terms), and the associated *GENE* (Elsevier) paper is not confirmed
+  open-access. This is the same situation as siRecords below: obtained
+  from a real but non-canonical channel (deleted-file git history rather
+  than a publisher-sanctioned download). The gap was raised and the user
+  chose to commit `data/raw/pdcd1_extra.csv` to this repo regardless — see
+  `NOTICE.md` for the commercial-use caveat that travels with it. The
+  transcript FASTA (`pdcd1_transcripts.fasta`) is pure NCBI RefSeq (public
+  domain) and is committed as normal.
+- Fetched by hand (no `sirna_data.fetch.*` module yet, given the small
+  size) into `data/raw/pdcd1_extra.csv` and `data/raw/pdcd1_transcripts.fasta`;
+  loaded by `_load_pdcd1_records` in `src/sirna_data/raw_loader.py`.
 
 ## Supplementary siRNA data: Shabalina, Spiridonov & Ogurtsov 2006
 
@@ -131,6 +178,127 @@ products, so its prepared data files are not safe to vendor into this project.
 - Fetched by `sirna_data.fetch.shabalina` (`sirna-data-fetch`) into
   `data/raw/shabalina_extra.csv` and `data/raw/shabalina_transcripts.fasta`.
 
+## Supplementary siRNA data: Martinelli 2023 / sirna-repro (253 of 907 rows, 7 new genes/reporters)
+
+- Martinelli 2023, bioRxiv preprint / `sirna-repro` (siRNAmod-derived
+  reproduction dataset). 907 chemically-modified siRNAs pooled from 30
+  source PMIDs/patents, kept locally (gitignored, not redistributed) at
+  `data/raw/sirna_repro_martinelli_907.csv` — see `NOTICE.md`.
+- **The blocker and how it was resolved**: as originally obtained, this
+  table has no gene-identity column at all — only sequence, a per-molecule
+  modification descriptor, `PCT` (%inhibition, already in this dataset's
+  standard 0–100 convention), and a source PMID/patent ID. That alone made
+  it unusable for leave-one-gene-out CV (see `POTENTIAL_DATA_SOURCES.md`'s
+  original "not integrated" verdict). Rather than trust each source
+  document's stated target from its abstract/title, every candidate
+  gene/reporter assignment was **confirmed computationally**: the sense
+  strand's first 19nt ("core", excluding each row's own 2nt 3' synthetic
+  overhang) was checked for exact substring containment in the real target
+  transcript, fetched fresh from NCBI/GenBank for that purpose.
+- **253 of 907 rows (27.9%) resolved this way, across 7 distinct real
+  targets** — +7 genes/reporters (98 → **105 genes**) for
+  leave-one-gene-out CV:
+
+  | Gene/reporter | Rows | Reference accession | Source PMIDs |
+  |---|---|---|---|
+  | `EGFP` | 74 | U55763.1 (pEGFP-C1 vector) | 19282453, 18575806, 12923253, 17363479, 22287630, 12408823 |
+  | `Luciferase_firefly` | 58 | U47296.1 (pGL3-Control, *luc+*) | 15653644, 22411910, 25699137, 22260772, US 20080249039 A1, US 8653252 B2 |
+  | `Luciferase_renilla` | 43 | AF025846.1 (pRL-TK) | 15653644, 17150641, 17924376, US 8653252 B2 |
+  | `APOB` | 34 | NM_000384.3 | 21047800, 19917641 |
+  | `ACP5` (TRACP) | 32 | NM_001111035.2 | 17511001 |
+  | `NPY` | 8 | NM_012614.2 | 15653644, US 8653252 B2 |
+  | `VEGFA` | 4 | NM_001025366.3 | 21985606 |
+
+- **A second resolution pass found 32 more rows whose "sense strand" column
+  was itself corrupted but whose antisense (guide) strand was intact and
+  correct.** For 28 of these rows (all of PMID 19917641's 23 rows, plus 3
+  from 17924376 and 2 from 25699137), the row's stated "sense" sequence did
+  not match any known reference (the reason these were originally left
+  unresolved) but was also not the reverse complement of the row's own
+  antisense field — i.e., internally inconsistent, not just externally
+  unverifiable. Computing the reverse complement of the antisense field
+  and checking *that* against the reference transcripts found a clean
+  19nt match every time: for the 3 rows from 17924376 and 2 from 25699137,
+  the resulting corrected sequence differs from the stored "sense" field by
+  only 1-2 characters (consistent with a data-entry/OCR typo, e.g. stored
+  `CUUACGCUCUGUACUUCGA` vs. correct `CUUACGCUGAGUACUUCGA`); for all 23 rows
+  of PMID 19917641 the stored "sense" field is the exact same,
+  completely-unrelated 19-mer repeated across every row regardless of PMID
+  19917641's real (varying) PCT values -- consistent with a single
+  copy/fill-down error in the original spreadsheet compilation rather than
+  23 independent scrambled controls (the original, more cautious read of
+  this PMID's rows -- documented in an earlier revision of this file --
+  is superseded by this finding: the antisense strand's guide-to-target
+  relationship is confirmed correct against real human APOB,
+  NM_000384.3). For these 28 rows, the CSV's `Sequence` column stores the
+  *corrected* 19nt sense (derived from the verified-correct antisense), not
+  the source table's original (unreliable) sense value; `Sequence_antisense`
+  is unchanged, still taken directly from the source.
+- A separate check confirmed **4 more rows (PMID 21985606) target VEGFA**
+  (NM_001025366.3) directly and cleanly on both strands -- no correction
+  needed, just a reference sequence (VEGFA) not previously in this
+  project's Martinelli reference set.
+- **The remaining ~654 rows (72.1%) are NOT included** and remain
+  unresolved:
+  - The single largest chunk (**544 rows, ~60% of the whole corpus**) comes
+    from one patent, US20120088815A1/EP2415869A1. Its own text confirms it
+    tested "target genes in table 1-182" (up to 182 real genes) via a
+    luciferase-reporter assay, but the actual gene names are not present in
+    the fetched patent text, and identifying ~182 genes from bare 19-mer
+    sequences alone would require BLAST access, unavailable in this
+    environment.
+  - PMID 17924376 (37 rows remaining, after 21 resolved to
+    Luciferase_renilla) and PMID 15919084 (20 rows): luciferase claimed by
+    the source paper, but the dominant candidate sequence doesn't match the
+    confirmed firefly (U47296.1) or Renilla (AF025846.1) reference used
+    above, nor does its antisense-reverse-complement -- possibly a
+    different luciferase vector/variant (pGL2/pGL4/codon-optimized *luc2*,
+    etc.) not yet checked.
+  - PMID 16598842 (15 rows): not yet investigated (only found as a citation
+    in other papers' reference lists, not fetched directly).
+  - PMID 23820891 (6 rows), "5' Unlocked Nucleic Acid Modification Improves
+    siRNA Targeting" (Snead et al. 2013, PMC3732871): confirmed via full
+    text to target the HIV-1 transcript (an siRNA called "siH5", assayed
+    via strand-specific dual-luciferase reporter, not a genomic human
+    target) -- out of scope for this project's gene-symbol convention
+    without adding an HIV reference sequence, not pursued.
+  - PMID 22889374 (4 rows): confirmed via abstract to target Enterovirus 71
+    (EV71)'s 5'UTR -- a viral, not human, target; not pursued (would need a
+    viral genome reference).
+  - PMID 21141919 (4 rows) and PMID 22982308 (2 rows): both titled/abstracted
+    as anti-MDR1 (ABCB1) work and share a near-identical sequence across
+    both papers, but neither the sense field nor the antisense-reverse-
+    complement of any of these 6 rows matches human ABCB1 (NM_000927.5) --
+    left unresolved rather than guessed (could be a rodent Mdr1a/Mdr1b
+    ortholog or a different ABCB1 transcript variant/isoform not yet
+    checked).
+  - PMID 20005874 (3 rows): confirmed via abstract to target coxsackievirus
+    B3 -- viral, not pursued.
+  - A handful of smaller/single-row documents (~10 rows total) not yet
+    investigated: PMID 22895883, 17616127, 17539595, 23682837.
+- **Both strands are taken directly from the source** (except the 28
+  sense-corrected rows above), not derived by reverse-complementing one
+  from the other — unlike every other loader in this file, Martinelli's
+  raw table gives independently-recorded sense and antisense sequences
+  (each with its own overhang and modification descriptor), and using the
+  source's real antisense preserves that detail instead of reconstructing
+  an idealized one.
+- **Chemical modification**: every one of the 253 rows carries a real,
+  non-placeholder per-molecule modification descriptor — locked nucleic
+  acid, hexitol nucleic acid, 2'-fluoro, 2'-O-methyl, 2'-deoxy, unlocked
+  nucleic acid, and 4-thioribose all appear. `is_modified`/
+  `modification_chemistry` are populated from this; like Monopoli2023 (and
+  unlike CMsiRNAdb), the annotation is per-molecule, not per-position, so
+  `sense_modifications`/`antisense_modifications` stay `None`.
+- Loaded by `_load_martinelli_records` in `src/sirna_data/raw_loader.py`
+  from `data/raw/martinelli_extra.csv` (the 253-row derivative with added
+  gene/accession columns, and corrected sense sequences for the 28 rows
+  noted above) and `data/raw/martinelli_transcripts.fasta` (the 7 reference
+  sequences above). **License**: the source `sirna-repro` dataset is CC
+  BY-NC 4.0, which — unlike CMsiRNAdb's CC BY-NC-ND — permits derivatives,
+  so this filtered/gene-annotated subset is committed to the repo like
+  Monopoli/Shabalina, not gitignored like PDCD1/siRecords.
+
 ## Supplementary siRNA data: CMsiRNAdb, human PCSK9 subset (2,756 rows, 1 new gene)
 
 - He et al. 2026, *BMC Bioinformatics* 27:33, "CMsiRNAdb: a database of
@@ -192,11 +360,13 @@ products, so its prepared data files are not safe to vendor into this project.
   against NM_174936.4; the rest fall back to duplex-only context.
 - **Known caveats, not fixed**: (1) All sequences here carry real chemical
   modifications (2'-O-methyl, phosphorothioate, 2'-fluoro, etc. -- 36
-  types across the full database) that RNAfold has no model of, folded as
-  plain unmodified RNA -- same approximation already accepted for
-  Monopoli2023, arguably on a wider and more heterogeneous set of
-  chemistries here since this spans 11 different patents/filers rather
-  than one lab's single design. (2) Patent-derived, not assay-paper-derived:
+  types across the full database). Their identity and position ARE now
+  captured -- see "Chemical modification data" below -- but folding/
+  structure prediction (RNAfold) still has no model of modified bases and
+  treats every sequence as plain unmodified RNA, same approximation
+  already accepted for Monopoli2023, arguably on a wider and more
+  heterogeneous set of chemistries here since this spans 11 different
+  patents/filers rather than one lab's single design. (2) Patent-derived, not assay-paper-derived:
   quality/protocol consistency across 11 different patent filers is
   inherently more heterogeneous than the academic sources. (3) Real
   sequence duplication: some sequences are repeated across many
@@ -241,6 +411,87 @@ products, so its prepared data files are not safe to vendor into this project.
   publicly downloadable (only "available from the corresponding author upon
   reasonable request" per the paper), so only its self-reported numbers can
   be used, not a re-run.
+
+## Chemical modification data
+
+Most of this dataset is standard/unmodified synthetic siRNA, but a growing
+minority is chemically modified (2'-O-methyl, 2'-fluoro, 2'-deoxy,
+phosphorothioate backbone, lipid/GalNAc conjugates, etc.) -- the kind of
+stabilizing chemistry used in real therapeutic siRNAs. Until now that
+distinction existed only in prose (this file's per-source notes, e.g.
+"chemically modified" in CMsiRNAdb's `technology` string); `SiRNARecord`
+itself had no field for it, so every downstream feature-engineering step
+was silently treating every record as plain unmodified RNA regardless of
+what was actually assayed.
+
+`SiRNARecord` now carries four modification fields:
+
+- `is_modified: bool` -- whether this specific measured molecule carries
+  any known chemical modification. `False` (the default) for every source
+  unless a loader explicitly sets otherwise.
+- `modification_chemistry: str | None` -- a short human-readable summary of
+  the chemistry class, e.g. `"2'-OMe/2'-F/PS-backbone (per-position,
+  CMsiRNAdb)"` or a dataset-level note when no per-position detail exists.
+- `sense_modifications` / `antisense_modifications: tuple[str | None, ...] | None`
+  -- per-position modified-nucleoside name (e.g. `"2'-O-Methylcytidine"`)
+  or `None` (confirmed unmodified/natural ribonucleotide) at each index,
+  aligned 1:1 with the corresponding strand's stored sequence. The whole
+  field is `None` (not a tuple of `None`s) when no per-position annotation
+  is available at all for that record -- distinct from "we checked, it's
+  unmodified everywhere here".
+
+**Coverage, by source:**
+
+- **CMsiRNAdb** (PCSK9 subset + the other-12-genes addition, ~12,357
+  records) -- the raw `cmsirnadb_full_raw.tsv` already carries real
+  per-position modification columns (`Modification_Types_{Sense,
+  Antisense}_strand`, one `position*chemistry-name` entry per nucleotide of
+  the full raw strand) that were previously read for sequence/label only
+  and otherwise discarded. `_cmsirnadb_align_modifications` in
+  `src/sirna_data/raw_loader.py` parses these and slices them to line up
+  with whichever window of the raw strand this project actually located
+  and stored, so the modification tuple's indices match `sense`/`guide_seq`
+  exactly. On the live dataset, **~64% of CMsiRNAdb records resolve real
+  per-position chemistry** (the rest either have no annotation for that
+  row, or the annotation didn't align cleanly with the located
+  sequence -- left as `None` rather than guessed at); common chemistry
+  classes found include 2'-OMe/2'-F/phosphorothioate-backbone (the most
+  common single combination), 2'-OMe-only, and a smaller GalNAc/lipid-
+  conjugate and 5'-vinyl-phosphonate-cap tail matching modern
+  ESC-platform-style therapeutic chemistry. For the collapsed
+  `_load_cmsirnadb_full_records` groups (multiple raw rows sharing one
+  duplex, different assay conditions), modification data comes from the
+  same representative row `technology`'s `Cell_Type` is already taken
+  from -- replicate measurements of one duplex share one chemical entity.
+- **Monopoli2023** (20 records) -- `is_modified=True` with a fixed,
+  dataset-level `modification_chemistry` summary ("sdRNA: heavy
+  2'-F/2'-OMe/phosphorothioate, cholesterol-conjugated"), since the paper
+  describes one architecture applied uniformly to all 20 rows but doesn't
+  give a per-position map the way CMsiRNAdb's raw table does --
+  `sense_modifications`/`antisense_modifications` stay `None`.
+- **Shmushkovich et al. 2018** (356, not integrated -- see
+  `POTENTIAL_DATA_SOURCES.md`) -- same chemistry class as Monopoli
+  (Monopoli's model was trained on it), but blocked from integration by
+  its own no-gene-identity problem, unrelated to modification data.
+- **Martinelli 2023 / sirna-repro** (253 of 907 rows integrated -- see the
+  dedicated section above) -- a genuine per-siRNA (not per-position)
+  modification-type column (e.g. "hexitol nucleic acid", "2-fluoro
+  2-O-methyl", or "0" for unmodified); every one of the 253 gene-resolved
+  rows carries real modification data, wired up via `is_modified`/
+  `modification_chemistry` like Monopoli2023. The other ~654 rows remain
+  blocked by the no-gene-identity problem that also blocks Shmushkovich (or,
+  for a handful of newly-identified documents, by being viral rather than
+  human targets, or unconfirmed against candidate references).
+- **5 FDA-approved drugs external-validation set** -- the AttSiOff source
+  table had 2'-F/2'-O-Me/phosphorothioate notation, but it was parsed down
+  to plain bases during the original verification work (see that section
+  above) and, separately, no code/data file for this set exists in the
+  repo yet at all -- reconstructing its modification data would mean
+  starting over from the source supplement, not just wiring up something
+  already committed.
+- **Every other source** (siRNAEfficacyDB, Shabalina 2006, siRecords, PDCD1
+  panel) -- standard/unmodified synthetic siRNA; `is_modified=False` by
+  the schema's default, nothing to wire up.
 
 ## Known data-quality caveats (do not "fix" silently — filtered/flagged instead)
 

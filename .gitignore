@@ -11,3 +11,12 @@ dist/
 # reference but never committed. See NOTICE.md / data/sirecords_overlap_analysis.md.
 data/raw/sirecords_efficacy.csv
 data/raw/sirecords_new_only.csv
+
+# sirna-repro (Martinelli, bioRxiv 10.1101/2023.08.16.553554) supplementary
+# training data (907 siRNAs, siRNAmod-derived): NOT integrated into the loader
+# -- no gene/target-identity column (same disqualifier as Shmushkovich 2018),
+# only sequence + chemical modification + PCT + a source PMID/patent-ID that
+# would require per-document tracing (30 documents, one patent = 60% of rows)
+# to recover gene identity. Kept locally for reference, never committed.
+# See data/POTENTIAL_DATA_SOURCES.md / data/DATA_SOURCE_LEDGER.md.
+data/raw/sirna_repro_martinelli_907.csv

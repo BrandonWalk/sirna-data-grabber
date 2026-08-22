@@ -21,6 +21,7 @@ RIGHT_FLANK = "CCCCC"
 SITES = {
     "primary": "ACGUACGUACGU",
     "monopoli": "GGGCCCGGGCCC",
+    "pdcd1": "CCGGAACCGGAA",
     "shabalina": "AAACCCGGGUUU",
 }
 
@@ -28,6 +29,33 @@ SITES = {
 # 12nt sites above.
 CMSIRNADB_PCSK9_SITE = ("ACGU" * 5)[:19]
 CMSIRNADB_OTHER_SITE = ("GCUA" * 5)[:19]
+
+# Martinelli rows also need a full 19nt core -- only the first 19nt of the
+# stored (21nt, overhang-included) "Sequence" field is expected to match the
+# transcript; the trailing 2nt overhang is each row's own synthetic tail,
+# not genomic sequence, so it must NOT appear in the transcript fixture.
+MARTINELLI_SITE = ("GCAU" * 5)[:19]
+
+_2OME_NAMES = {
+    "A": "2'-O-Methyladenosine", "C": "2'-O-Methylcytidine",
+    "G": "2'-O-Methylguanosine", "U": "2'-O-Methyluridine",
+}
+_2F_NAMES = {
+    "A": "2'-Fluoroadenosine", "C": "2'-Fluorocytidine",
+    "G": "2'-Fluoroguanosine", "U": "2'-Fluorouridine",
+}
+
+
+def _mod_types_field(seq: str, modified_positions: set[int], names: dict[str, str]) -> str:
+    """Build a `Modification_Types_*_strand`-style cell: bare base letter
+    (CMsiRNAdb's own "no annotation" sentinel) at every position not in
+    `modified_positions` (1-indexed), the real modified-nucleoside name at
+    every position that is."""
+    parts = []
+    for i, base in enumerate(seq, start=1):
+        value = names[base] if i in modified_positions else base
+        parts.append(f"{i}*{value}")
+    return " || ".join(parts)
 
 
 def _transcript(site: str) -> str:
@@ -65,6 +93,14 @@ def fake_data_dir(tmp_path: Path) -> Path:
         data_dir / "monopoli_transcripts.fasta", {"ACC3": _transcript(SITES["monopoli"])}
     )
 
+    (data_dir / "pdcd1_extra.csv").write_text(
+        "Experiment_ID,Sequence,Gene,Accession_number,Efficiency_LUC_Pct,Efficiency_QPCR_Pct\n"
+        f"163-1,{SITES['pdcd1']},PDCD1,NM_005018,97.0,96.5\n"
+    )
+    _write_fasta(
+        data_dir / "pdcd1_transcripts.fasta", {"NM_005018": _transcript(SITES["pdcd1"])}
+    )
+
     (data_dir / "shabalina_extra.csv").write_text(
         "Sequence,Gene,Accession_number,Activity_Remaining_Pct\n"
         f"{SITES['shabalina']},GENED,ACC4,40.0\n"
@@ -73,31 +109,77 @@ def fake_data_dir(tmp_path: Path) -> Path:
         data_dir / "shabalina_transcripts.fasta", {"ACC4": _transcript(SITES["shabalina"])}
     )
 
+    # Martinelli/sirna-repro: both strands given directly (not derived by
+    # revcomp), each with its own 2nt 3' overhang appended past the 19nt
+    # core that's expected to match the transcript. Row 1 exercises the
+    # modified path (sense modified, antisense the "0" = unmodified
+    # sentinel); row 2 exercises the fully-unmodified ("0"/"0") path.
+    martinelli_antisense = raw_loader_module._revcomp(MARTINELLI_SITE)
+    (data_dir / "martinelli_extra.csv").write_text(
+        "Experiment_ID,PMID,Gene,Accession_number,Sequence,Modification_sense,"
+        "Sequence_antisense,Modification_antisense,PCT\n"
+        f"SM1,12345678,MARTGENE,MARTACC,{MARTINELLI_SITE}UU,locked nucleic acid,"
+        f"{martinelli_antisense}UU,0,75.0\n"
+        f"SM2,12345678,MARTGENE,MARTACC,{MARTINELLI_SITE}UU,0,"
+        f"{martinelli_antisense}UU,0,20.0\n"
+    )
+    _write_fasta(
+        data_dir / "martinelli_transcripts.fasta", {"MARTACC": _transcript(MARTINELLI_SITE)}
+    )
+
     # CMsiRNAdb: a single raw master TSV feeds both _load_cmsirnadb_records
     # (PCSK9) and _load_cmsirnadb_full_records (everything else) -- see
     # raw_loader.py's module-level CMsiRNAdb note for why there's no
     # pre-filtered CSV here (CC BY-NC-ND forbids redistributing a derivative).
     revcomp = raw_loader_module._revcomp
     incl_core = raw_loader_module.CMSIRNADB_INCLISIRAN_CORE
-    tsv_columns = "Accession_number\tTarget_Gene\tAntisense_seqence\tSense_seqence\tInhibition\tCell_Type\n"
+
+    # Modification annotation for the surviving rows -- see
+    # test_load_cmsirnadb_records / test_load_cmsirnadb_full_records for
+    # what these are expected to parse to. Excluded rows get an empty
+    # annotation since it's never read for them.
+    pcsk9_antisense = revcomp(CMSIRNADB_PCSK9_SITE)
+    pcsk9_sense_mods = _mod_types_field(CMSIRNADB_PCSK9_SITE, {1, 2}, _2OME_NAMES)
+    pcsk9_antisense_mods = _mod_types_field(pcsk9_antisense, set(), _2OME_NAMES)  # all bare = unmodified
+    genef_antisense = revcomp(CMSIRNADB_OTHER_SITE)
+    genef_sense_mods = _mod_types_field(
+        CMSIRNADB_OTHER_SITE, set(range(1, len(CMSIRNADB_OTHER_SITE) + 1)), _2OME_NAMES
+    )
+    genef_antisense_mods = _mod_types_field(
+        genef_antisense, set(range(1, len(genef_antisense) + 1)), _2F_NAMES
+    )
+
+    tsv_columns = (
+        "Accession_number\tTarget_Gene\tAntisense_seqence\tSense_seqence\tInhibition\t"
+        "Cell_Type\tModification_Types_Sense_strand\tModification_Types_Antisense_strand\n"
+    )
     tsv_rows = [
         # kept: normal PCSK9 row, accession deliberately "wrong" (not the
         # canonical one) to check every surviving row gets normalized to it.
-        f"NR_110451.3\tPCSK9\t{revcomp(CMSIRNADB_PCSK9_SITE)}\t{CMSIRNADB_PCSK9_SITE}\t65.0\tHepG2\n",
+        # Sense strand: positions 1-2 modified (2'-OMe), rest unmodified.
+        # Antisense strand: fully unannotated (bare-letter sentinel), same
+        # as CMsiRNAdb's own real-data pattern for rows with no antisense
+        # chemistry info.
+        f"NR_110451.3\tPCSK9\t{pcsk9_antisense}\t{CMSIRNADB_PCSK9_SITE}\t65.0\tHepG2\t"
+        f"{pcsk9_sense_mods}\t{pcsk9_antisense_mods}\n",
         # excluded: mouse accession (species filter).
-        f"NM_153565.2\tPCSK9\t{revcomp(CMSIRNADB_PCSK9_SITE)}\t{CMSIRNADB_PCSK9_SITE}\t50.0\tMus musculus\n",
+        f"NM_153565.2\tPCSK9\t{pcsk9_antisense}\t{CMSIRNADB_PCSK9_SITE}\t50.0\tMus musculus\t\t\n",
         # excluded: non-human hepatocytes cell type (species filter).
-        f"NR_110451.3\tPCSK9\t{revcomp(CMSIRNADB_PCSK9_SITE)}\t{CMSIRNADB_PCSK9_SITE}\t55.0\tNon-human hepatocytes\n",
+        f"NR_110451.3\tPCSK9\t{pcsk9_antisense}\t{CMSIRNADB_PCSK9_SITE}\t55.0\tNon-human hepatocytes\t\t\n",
         # excluded: antisense contains inclisiran's real target core.
-        f"NR_110451.3\tPCSK9\t{incl_core}\t{CMSIRNADB_PCSK9_SITE}\t72.0\tHepG2\n",
+        f"NR_110451.3\tPCSK9\t{incl_core}\t{CMSIRNADB_PCSK9_SITE}\t72.0\tHepG2\t\t\n",
         # kept: non-PCSK9 gene, first of two duplicate-duplex measurements
-        # (collapsed to one row, label = median).
-        f"NM_000001.1\tGENEF\t{revcomp(CMSIRNADB_OTHER_SITE)}\t{CMSIRNADB_OTHER_SITE}\t70.0\tHela\n",
-        f"NM_000001.1\tGENEF\t{revcomp(CMSIRNADB_OTHER_SITE)}\t{CMSIRNADB_OTHER_SITE}\t90.0\tHela\n",
+        # (collapsed to one row, label = median). Fully modified on both
+        # strands (different chemistry family per strand) so the collapsed
+        # record's modification data is unambiguous to assert on.
+        f"NM_000001.1\tGENEF\t{genef_antisense}\t{CMSIRNADB_OTHER_SITE}\t70.0\tHela\t"
+        f"{genef_sense_mods}\t{genef_antisense_mods}\n",
+        f"NM_000001.1\tGENEF\t{genef_antisense}\t{CMSIRNADB_OTHER_SITE}\t90.0\tHela\t"
+        f"{genef_sense_mods}\t{genef_antisense_mods}\n",
         # excluded: data-entry outlier (outside [-50, 100]).
-        f"NM_000001.1\tGENEF\t{revcomp(CMSIRNADB_OTHER_SITE)}\t{CMSIRNADB_OTHER_SITE}\t500.0\tHela\n",
+        f"NM_000001.1\tGENEF\t{genef_antisense}\t{CMSIRNADB_OTHER_SITE}\t500.0\tHela\t\t\n",
         # excluded: contaminated sequence (non-ACGU character).
-        f"NM_000001.1\tGENEF\t{revcomp(CMSIRNADB_OTHER_SITE)}\t{CMSIRNADB_OTHER_SITE}N\t80.0\tHela\n",
+        f"NM_000001.1\tGENEF\t{genef_antisense}\t{CMSIRNADB_OTHER_SITE}N\t80.0\tHela\t\t\n",
     ]
     (data_dir / "cmsirnadb_full_raw.tsv").write_text(tsv_columns + "".join(tsv_rows))
 
@@ -132,6 +214,7 @@ class FixtureConstants:
     sites = SITES
     cmsirnadb_pcsk9_site = CMSIRNADB_PCSK9_SITE
     cmsirnadb_other_site = CMSIRNADB_OTHER_SITE
+    martinelli_site = MARTINELLI_SITE
     transcript = staticmethod(_transcript)
 
 

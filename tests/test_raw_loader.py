@@ -7,10 +7,15 @@ import pytest
 from sirna_data.raw_loader import (
     CMSIRNADB_PCSK9_ACCESSION,
     SiRNARecord,
+    _cmsirnadb_align_modifications,
+    _cmsirnadb_chemistry_summary,
+    _cmsirnadb_parse_modification_types,
     _dna_to_rna,
     _load_cmsirnadb_full_records,
     _load_cmsirnadb_records,
+    _load_martinelli_records,
     _load_monopoli_records,
+    _load_pdcd1_records,
     _load_shabalina_records,
     _load_sirnaefficacydb_records,
     _locate_window,
@@ -143,6 +148,29 @@ def test_load_monopoli_records(patch_data_dir: Path, fixture_constants):
     assert r.label == pytest.approx(100.0 - 30.0)
     assert r.has_flanking_context is True
     assert r.guide_seq == _revcomp(fixture_constants.sites["monopoli"])
+    # Dataset-level chemistry tag, not per-position (Monopoli's raw table
+    # has no position-indexed modification columns the way CMsiRNAdb's does).
+    assert r.is_modified is True
+    assert r.modification_chemistry is not None
+    assert "sdRNA" in r.modification_chemistry
+    assert r.sense_modifications is None
+    assert r.antisense_modifications is None
+
+
+def test_load_pdcd1_records(patch_data_dir: Path, fixture_constants):
+    records = _load_pdcd1_records(FLANK)
+    assert len(records) == 1
+    r = records[0]
+    assert r.gene == "PDCD1"
+    assert r.source == "siRNABERT_PDCD1"
+    assert r.label == pytest.approx(96.5)
+    assert r.has_flanking_context is True
+    assert r.guide_seq == _revcomp(fixture_constants.sites["pdcd1"])
+    # Unmodified source (standard synthetic siRNA) -- the schema's defaults.
+    assert r.is_modified is False
+    assert r.modification_chemistry is None
+    assert r.sense_modifications is None
+    assert r.antisense_modifications is None
 
 
 def test_load_shabalina_records(patch_data_dir: Path):
@@ -152,6 +180,119 @@ def test_load_shabalina_records(patch_data_dir: Path):
     assert r.gene == "GENED"
     assert r.source == "Shabalina2006"
     assert r.label == pytest.approx(100.0 - 40.0)
+
+
+def test_load_martinelli_records(patch_data_dir: Path, fixture_constants):
+    records = _load_martinelli_records(FLANK)
+    assert len(records) == 2
+    by_id = {r.row_id: r for r in records}
+
+    # Row 1: sense modified ("locked nucleic acid"), antisense the "0" =
+    # unmodified sentinel -- still counts as is_modified overall.
+    r1 = by_id["martinelli_SM1"]
+    assert r1.gene == "MARTGENE"
+    assert r1.accession == "MARTACC"
+    assert r1.source == "Martinelli_sirna_repro"
+    assert r1.label == pytest.approx(75.0)
+    assert r1.has_flanking_context is True
+    # both strands taken directly from the source, not revcomp-derived.
+    assert r1.guide_seq == _revcomp(fixture_constants.martinelli_site) + "UU"
+    assert r1.duplex_len == 19
+    assert r1.site_len == 19  # 3' overhang excluded from the matched core
+    assert r1.is_modified is True
+    assert r1.modification_chemistry == "locked nucleic acid (per-molecule, Martinelli/sirna-repro)"
+    # per-molecule, not per-position, annotation -- these stay unset.
+    assert r1.sense_modifications is None
+    assert r1.antisense_modifications is None
+
+    # Row 2: "0"/"0" on both strands -- the fully-unmodified sentinel path.
+    r2 = by_id["martinelli_SM2"]
+    assert r2.label == pytest.approx(20.0)
+    assert r2.is_modified is False
+    assert r2.modification_chemistry is None
+
+
+# --------------------------------------------------------------------------
+# CMsiRNAdb modification-annotation parsing (pure functions)
+# --------------------------------------------------------------------------
+
+
+def test_cmsirnadb_parse_modification_types_mixed():
+    # position 1 modified, 2-3 bare-letter (unmodified sentinel).
+    field = "1*2'-O-Methylcytidine || 2*A || 3*G"
+    assert _cmsirnadb_parse_modification_types(field, 3) == (
+        "2'-O-Methylcytidine", None, None,
+    )
+
+
+def test_cmsirnadb_parse_modification_types_all_unmodified():
+    field = "1*A || 2*C || 3*G"
+    assert _cmsirnadb_parse_modification_types(field, 3) == (None, None, None)
+
+
+def test_cmsirnadb_parse_modification_types_empty_or_missing():
+    assert _cmsirnadb_parse_modification_types("", 3) is None
+    assert _cmsirnadb_parse_modification_types("nan", 3) is None
+
+
+def test_cmsirnadb_parse_modification_types_length_mismatch():
+    # only 2 positions given but seq_len says 3 -- don't guess, return None.
+    assert _cmsirnadb_parse_modification_types("1*A || 2*C", 3) is None
+
+
+def test_cmsirnadb_align_modifications_slices_to_window():
+    # full raw strand is 5nt, but we only stored a 3nt core starting at
+    # offset 1 -- the returned tuple should be sliced/aligned to that core.
+    seq_full = "AACGU"
+    field = "1*A || 2*2'-O-Methyladenosine || 3*C || 4*G || 5*U"
+    result = _cmsirnadb_align_modifications(seq_full, "ACG", field)
+    assert result == ("2'-O-Methyladenosine", None, None)
+
+
+def test_cmsirnadb_align_modifications_target_not_found():
+    result = _cmsirnadb_align_modifications("AACGU", "UUUU", "1*A || 2*C || 3*G || 4*U || 5*A")
+    assert result is None
+
+
+def test_cmsirnadb_chemistry_summary_none_when_no_modifications():
+    assert _cmsirnadb_chemistry_summary(None, None) == (False, None)
+    assert _cmsirnadb_chemistry_summary((None, None), None) == (False, None)
+
+
+def test_cmsirnadb_chemistry_summary_classifies_families():
+    sense = ("2'-O-Methyladenosine", None)
+    antisense = ("2'-Fluorocytidine", "2'-O-Methyl-3'-Phosphorothioate uridine")
+    is_modified, summary = _cmsirnadb_chemistry_summary(sense, antisense)
+    assert is_modified is True
+    assert summary is not None
+    assert "2'-OMe" in summary
+    assert "2'-F" in summary
+    assert "PS-backbone" in summary
+    assert "CMsiRNAdb" in summary
+
+
+def test_load_cmsirnadb_full_records_missing_modification_columns_is_safe(
+    tmp_path: Path, fixture_constants):
+    """Backward compat: an old-format raw TSV with no modification columns
+    at all must still load cleanly, just with is_modified=False and no
+    per-position data -- not an error."""
+    data_dir = tmp_path / "raw"
+    data_dir.mkdir()
+    site = fixture_constants.cmsirnadb_other_site
+    revcomp = _revcomp
+    (data_dir / "cmsirnadb_full_raw.tsv").write_text(
+        "Accession_number\tTarget_Gene\tAntisense_seqence\tSense_seqence\tInhibition\tCell_Type\n"
+        f"NM_000001.1\tGENEF\t{revcomp(site)}\t{site}\t70.0\tHela\n"
+    )
+    with open(data_dir / "cmsirnadb_full_transcripts.fasta", "w") as fh:
+        fh.write(f">NM_000001.1\n{('AAAAA' + site + 'CCCCC')}\n")
+    records = _load_cmsirnadb_full_records(FLANK, data_dir=data_dir)
+    assert len(records) == 1
+    r = records[0]
+    assert r.is_modified is False
+    assert r.modification_chemistry is None
+    assert r.sense_modifications is None
+    assert r.antisense_modifications is None
 
 
 def test_load_cmsirnadb_records(patch_data_dir: Path, fixture_constants):
@@ -169,6 +310,21 @@ def test_load_cmsirnadb_records(patch_data_dir: Path, fixture_constants):
     assert r.accession == CMSIRNADB_PCSK9_ACCESSION
     assert r.has_flanking_context is True
     assert r.guide_seq == _revcomp(fixture_constants.cmsirnadb_pcsk9_site)
+    # Modification: sense positions 1-2 are 2'-OMe, rest unmodified -- a
+    # real tuple of mostly-None, not a bare None ("checked, unmodified
+    # here" differs from "no annotation at all"). Antisense in the fixture
+    # is bare-letter throughout too, which is CMsiRNAdb's own sentinel for
+    # "confirmed unmodified" (not the same as a missing/empty field, which
+    # is what actually produces a bare None -- see
+    # test_load_cmsirnadb_full_records_missing_modification_columns_is_safe).
+    assert r.is_modified is True
+    assert r.modification_chemistry == "2'-OMe (per-position, CMsiRNAdb)"
+    assert r.sense_modifications is not None
+    assert r.sense_modifications[0] == "2'-O-Methyladenosine"
+    assert r.sense_modifications[1] == "2'-O-Methylcytidine"
+    assert all(m is None for m in r.sense_modifications[2:])
+    assert r.antisense_modifications is not None
+    assert all(m is None for m in r.antisense_modifications)
 
 
 def test_load_cmsirnadb_records_excludes_species_and_inclisiran(patch_data_dir: Path):
@@ -194,6 +350,16 @@ def test_load_cmsirnadb_full_records(patch_data_dir: Path, fixture_constants):
     assert "Hela" in r.technology
     assert r.has_flanking_context is True
     assert r.guide_seq == _revcomp(fixture_constants.cmsirnadb_other_site)
+    # Modification: fully 2'-OMe on sense, fully 2'-F on antisense in the
+    # fixture (both duplicate rows share the same annotation -- the
+    # representative row's data is what should end up on the collapsed
+    # record).
+    assert r.is_modified is True
+    assert r.modification_chemistry == "2'-OMe/2'-F (per-position, CMsiRNAdb)"
+    assert r.sense_modifications is not None
+    assert all(m is not None for m in r.sense_modifications)
+    assert r.antisense_modifications is not None
+    assert all(m is not None for m in r.antisense_modifications)
 
 
 def test_load_cmsirnadb_full_records_dedup_against_existing(
@@ -207,6 +373,7 @@ def test_load_cmsirnadb_full_records_dedup_against_existing(
     "loader",
     [
         _load_monopoli_records,
+        _load_pdcd1_records,
         _load_shabalina_records,
         _load_cmsirnadb_records,
         _load_cmsirnadb_full_records,
@@ -233,13 +400,16 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         fasta_path=fake_data_dir / "mrna_transcripts.fasta",
         flank_nt=FLANK,
     )
-    # 2 primary + 1 each of 4 supplementary sources
-    assert len(records) == 6
+    # 2 primary + 1 each of monopoli/pdcd1/shabalina/cmsirnadb/cmsirnadb_full
+    # + 2 martinelli
+    assert len(records) == 9
     sources = {r.source for r in records}
     assert sources == {
         "siRNAEfficacyDB",
         "Monopoli2023",
+        "siRNABERT_PDCD1",
         "Shabalina2006",
+        "Martinelli_sirna_repro",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
     }
@@ -251,7 +421,9 @@ def test_load_records_respects_include_flags(patch_data_dir: Path, fake_data_dir
         fasta_path=fake_data_dir / "mrna_transcripts.fasta",
         flank_nt=FLANK,
         include_monopoli=False,
+        include_pdcd1=False,
         include_shabalina=False,
+        include_martinelli=False,
         include_cmsirnadb=False,
         include_cmsirnadb_full=False,
     )
@@ -270,8 +442,9 @@ def test_load_records_can_exclude_primary_source(patch_data_dir: Path, fake_data
         include_sirna_efficacy=False,
     )
     assert "siRNAEfficacyDB" not in {r.source for r in records}
-    # the other 4 supplementary sources still load by default
-    assert len(records) == 4
+    # the other supplementary sources still load by default (1 each of
+    # monopoli/pdcd1/shabalina/cmsirnadb/cmsirnadb_full + 2 martinelli)
+    assert len(records) == 7
 
 
 def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake_data_dir: Path):
@@ -281,7 +454,9 @@ def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake
         flank_nt=FLANK,
         include_sirna_efficacy=False,
         include_monopoli=False,
+        include_pdcd1=False,
         include_shabalina=False,
+        include_martinelli=False,
         include_cmsirnadb=False,
         include_cmsirnadb_full=False,
     )
@@ -292,7 +467,7 @@ def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
     # csv_path/fasta_path omitted -> should fall back to DATA_DIR/<default filenames>,
     # which patch_data_dir has already pointed at the fixture directory.
     records = load_records(flank_nt=FLANK)
-    assert len(records) == 6
+    assert len(records) == 9
 
 
 def test_load_records_data_dir_arg_without_env_var(
@@ -301,11 +476,13 @@ def test_load_records_data_dir_arg_without_env_var(
     # pass the directory straight to load_records().
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=fake_data_dir)
-    assert len(records) == 6
+    assert len(records) == 9
     assert {r.source for r in records} == {
         "siRNAEfficacyDB",
         "Monopoli2023",
+        "siRNABERT_PDCD1",
         "Shabalina2006",
+        "Martinelli_sirna_repro",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
     }
@@ -314,7 +491,7 @@ def test_load_records_data_dir_arg_without_env_var(
 def test_load_records_data_dir_accepts_str(fake_data_dir: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=str(fake_data_dir))
-    assert len(records) == 6
+    assert len(records) == 9
 
 
 # --------------------------------------------------------------------------

@@ -8,14 +8,14 @@ command that re-fetches it from its original sources. Any project that wants
 this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
-**Currently: 16,178 siRNA records across 97 genes** (`load_records()`
+**Currently: 16,439 siRNA records across 105 genes** (`load_records()`
 default). Every source is individually toggleable via its own `include_*`
 flag -- see [`data/DATA_SOURCE_LEDGER.md`](data/DATA_SOURCE_LEDGER.md) for
 the per-source breakdown.
 
 ## Genes in this dataset
 
-All 97 genes currently in `load_records()`'s default output, the source
+All 105 genes currently in `load_records()`'s default output, the source
 dataset(s) each came from, how many siRNA records target that gene, and the
 length of the real mRNA/GenBank transcript its target sites were located in.
 Computed directly from the fetched `data/raw/` files, not hand-maintained --
@@ -23,15 +23,17 @@ for genes with more than one distinct transcript accession across records
 (marked [^multi]), the length shown is for the one used by the most records.
 
 <details>
-<summary>Show all 97 genes</summary>
+<summary>Show all 105 genes</summary>
 
 | Gene | Source dataset | siRNAs | Transcript length (nt) |
 |---|---|---|---|
+| ACP5 | Martinelli 2023 / sirna-repro | 32 | 1,683 |
 | AGT | CMsiRNAdb (full) | 872 | 2,148 [^multi] |
 | AKT1 | Shabalina 2006 | 5 | 3,008 |
 | AKT2 | Shabalina 2006 | 4 | 5,250 |
 | ALPG | Shabalina 2006 | 11 | 2,492 |
 | ANGPTL3 | CMsiRNAdb (full) | 551 | 2,926 [^multi] |
+| APOB | Martinelli 2023 / sirna-repro | 34 | 14,121 |
 | APP | CMsiRNAdb (full) + Monopoli 2023 | 960 | 3,358 [^multi] |
 | BACE1 | Monopoli 2023 | 3 | 5,835 |
 | C6orf110 | siRNAEfficacyDB | 145 | 3,465 |
@@ -45,7 +47,8 @@ for genes with more than one distinct transcript accession across records
 | Cyclophilin B | siRNAEfficacyDB | 90 | 851 |
 | DAD1 | Shabalina 2006 | 5 | 684 |
 | DBI | siRNAEfficacyDB | 9 | 675 |
-| EGFP | siRNAEfficacyDB | 702 | N/A [^egfp] |
+| EGFP | Martinelli 2023 / sirna-repro | 74 | 1,470 |
+| EGFP[^egfp2] | siRNAEfficacyDB | 702 | N/A [^egfp] |
 | EIF4EBP1 | Shabalina 2006 | 4 | 827 |
 | F3_human | Shabalina 2006 | 14 | 2,104 |
 | F3_mouse | Shabalina 2006 | 10 | 1,821 |
@@ -67,11 +70,13 @@ for genes with more than one distinct transcript accession across records
 | ICAM-1 | siRNAEfficacyDB | 40 | 2,986 |
 | IGF1R | Shabalina 2006 | 21 | 12,235 |
 | ILK | Shabalina 2006 | 5 | 1,759 |
-| INHBE | CMsiRNAdb (full) | 670 | 2,460 |
+| INHBE | CMsiRNAdb (full) | 670 | 2,460 [^multi] |
 | IRS1 | Shabalina 2006 | 5 | 9,771 |
 | ITGB1 | Shabalina 2006 | 5 | 3,735 |
 | Lamin A | siRNAEfficacyDB | 44 | 9,756 |
-| LPA | CMsiRNAdb (full) | 556 | 6,431 |
+| LPA | CMsiRNAdb (full) | 556 | 6,431 [^multi] |
+| Luciferase_firefly | Martinelli 2023 / sirna-repro | 58 | 1,932 |
+| Luciferase_renilla | Martinelli 2023 / sirna-repro | 43 | 1,969 |
 | LYPD1 | Shabalina 2006 | 14 | 3,458 |
 | MAPK14 | Shabalina 2006 | 8 | 4,222 |
 | MAPT | CMsiRNAdb (full) + Monopoli 2023 | 635 | 6,816 [^multi] |
@@ -82,10 +87,12 @@ for genes with more than one distinct transcript accession across records
 | MYC | Shabalina 2006 | 5 | 3,721 |
 | MyoD | Shabalina 2006 | 5 | 1,833 |
 | NOG | siRNAEfficacyDB | 71 | 1,913 |
+| NPY | Martinelli 2023 / sirna-repro | 8 | 567 |
 | P2rx2 | siRNAEfficacyDB | 77 | 1,833 |
 | P2RX3 | siRNAEfficacyDB | 90 | 3,792 |
 | PAC | Shabalina 2006 | 10 | 906 |
 | PCSK9 | CMsiRNAdb (PCSK9) | 2,756 | 3,637 |
+| PDCD1 | siRNABERT PDCD1 panel (Xu/Zhao 2024) | 8 | 2,097 |
 | PDPK1 | Shabalina 2006 | 5 | 7,184 |
 | PIK3CA | Shabalina 2006 | 5 | 9,259 |
 | PIK3R1 | Shabalina 2006 | 5 | 3,371 |
@@ -124,6 +131,7 @@ for genes with more than one distinct transcript accession across records
 | UBE2S | siRNAEfficacyDB | 79 | 2,559 |
 | UBE2V1 | siRNAEfficacyDB | 74 | 2,539 |
 | Ufc1 | siRNAEfficacyDB | 70 | 888 |
+| VEGFA | Martinelli 2023 / sirna-repro | 4 | 3,660 |
 
 </details>
 
@@ -131,17 +139,24 @@ for genes with more than one distinct transcript accession across records
 its records in the raw data (different isoforms/predicted RefSeq entries
 used for different rows) -- the length shown is for the accession used by
 the largest number of records, not necessarily all of them.
-[^egfp]: `EGFP`'s 702 rows are mapped in siRNAEfficacyDB to accession
-`NZ_CP024869`, which currently resolves to a ~3.7 Mb bacterial genome
-assembly, not the actual EGFP transcript -- almost certainly lab-plasmid
-contamination baked into that assembly (see "Known data-quality caveats" in
-[`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)). All 702 target sites still
-verify correctly against a small window of that assembly, so it's usable for
-target-site context, but its full length is not a meaningful "EGFP
-transcript length" and is omitted here rather than shown as 3,720,309 nt.
-`Firefly luciferase` and `FireflyLuc` are also two separate string labels in
-the source data for what is conceptually the same reporter, kept distinct
-here since that's how `load_records()` actually groups them.
+[^egfp]: This `EGFP` row's 702 rows are mapped in siRNAEfficacyDB to
+accession `NZ_CP024869`, which currently resolves to a ~3.7 Mb bacterial
+genome assembly, not the actual EGFP transcript -- almost certainly
+lab-plasmid contamination baked into that assembly (see "Known data-quality
+caveats" in [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)). All 702 target
+sites still verify correctly against a small window of that assembly, so
+it's usable for target-site context, but its full length is not a
+meaningful "EGFP transcript length" and is omitted here rather than shown as
+3,720,309 nt. `Firefly luciferase` and `FireflyLuc` are also two separate
+string labels in the source data for what is conceptually the same
+reporter, kept distinct here since that's how `load_records()` actually
+groups them.
+[^egfp2]: This dataset has two textually-distinct `EGFP` gene entries: the
+Martinelli row uses a clean `"EGFP"` gene string, while siRNAEfficacyDB's
+own `Gene` column has a trailing space (`"EGFP "`) -- a pre-existing
+data-entry quirk in that source, not introduced by adding Martinelli. They
+group separately here and in `load_records()` because that's how the raw
+gene strings actually compare, not silently merged.
 
 ## License
 
@@ -204,8 +219,8 @@ tests/
 
 Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
 dataset and where it came from; [`data/DATA_SOURCE_LEDGER.md`](data/DATA_SOURCE_LEDGER.md)
-for the bottom-line audit (6,577 trainable records across 87 genes, 4
-sources — 16,178 records / 97 genes if the optional CMsiRNAdb full-database
+for the bottom-line audit (6,838 trainable records across 95 genes, 6
+sources — 16,439 records / 105 genes if the optional CMsiRNAdb full-database
 retrieval is also included). Primary source is **siRNAEfficacyDB** (Zhang
 et al. 2024, CC BY-NC); see the docs for the rest and their individual
 license terms before reusing this data outside this project.
@@ -276,15 +291,24 @@ r.mrna_window      # local mRNA context around the real target site
 r.label            # experimental %knockdown / %inhibition
 r.source           # provenance, e.g. "siRNAEfficacyDB"
 
+# Chemical modification (most records are standard/unmodified; a minority
+# -- currently CMsiRNAdb, Monopoli2023, and Martinelli_sirna_repro -- are
+# chemically modified):
+r.is_modified              # bool
+r.modification_chemistry   # short summary, e.g. "2'-OMe/2'-F/PS-backbone (per-position, CMsiRNAdb)"
+r.sense_modifications       # per-position modified-nucleoside name or None; CMsiRNAdb only
+r.antisense_modifications   # same, for the guide strand
+
 # Look up any gene's RefSeq transcript live from NCBI:
 transcript = fetch_mrna_by_gene("TP53")
 transcript.accession, transcript.sequence
 ```
 
 `load_records()` takes `include_sirna_efficacy` / `include_monopoli` /
-`include_shabalina` / `include_cmsirnadb` / `include_cmsirnadb_full` flags
-(all default `True`) to include or exclude any individual source, including
-the primary siRNAEfficacyDB set -- no source is loaded unconditionally.
+`include_pdcd1` / `include_shabalina` / `include_martinelli` /
+`include_cmsirnadb` / `include_cmsirnadb_full` flags (all default `True`) to
+include or exclude any individual source, including the primary
+siRNAEfficacyDB set -- no source is loaded unconditionally.
 
 `data_dir` (a `Path` or `str`) points every source at a specific directory of
 fetched files, as a plain function argument -- no `SIRNA_DATA_DIR` export

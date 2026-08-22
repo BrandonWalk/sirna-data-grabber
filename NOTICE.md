@@ -20,9 +20,24 @@ per source.
 |---|---|---|---|
 | siRNAEfficacyDB (Zhang et al. 2024) | `sirna_efficacy.csv` | CC BY-NC | **No** — non-commercial only |
 | Monopoli et al. 2023 | `monopoli_extra.csv` | CC BY 4.0 | Yes, with attribution |
+| PDCD1 panel (Xu/Zhao et al. 2024, siRNABERT repo) | `pdcd1_extra.csv` | **Unresolved — no LICENSE file in the source repo, paper not confirmed open-access.** Committed at the user's explicit request despite this; see below. | Unclear — do not assume |
 | Shabalina et al. 2006 | `shabalina_extra.csv` | CC BY 2.0 | Yes, with attribution |
 | CMsiRNAdb (He et al. 2026) | `cmsirnadb_full_raw.tsv` | CC BY-NC-ND 4.0 | **No** — non-commercial only, and the "ND" term means only the original unmodified file may be redistributed (see below) |
 | NCBI RefSeq/GenBank transcripts | `*_transcripts.fasta` | Public domain | Yes, unrestricted |
+
+**PDCD1 panel's unresolved license**: recovered from a deleted file in
+github.com/ChengkuiZhao/siRNABERT's git history (commit `f3254ee`, before
+its removal in `d2ad931`) — a real but non-canonical channel, and that repo
+carries no `LICENSE` file (all-rights-reserved by default). Loaded by
+`load_records()` when present locally (`include_pdcd1=True` by default,
+gracefully returns nothing if the file is absent). Unlike siRecords below,
+`pdcd1_extra.csv` **is committed to this repo** — at the user's explicit
+request, made and confirmed with the license gap called out beforehand. If
+you're relying on this data outside non-commercial research, verify
+redistribution rights directly with the siRNABERT authors first; this
+repo's own permissive (MIT) license does not extend to it. The companion
+transcript FASTA is pure NCBI RefSeq (public domain) and is committed
+normally. See `data/DATA_SOURCES.md`.
 
 **CMsiRNAdb's "No Derivatives" term**: this repo ships only the untouched
 original `cmsirnadb_full_raw.tsv` download. All filtering, collapsing, and
