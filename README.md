@@ -18,6 +18,27 @@ default). Every source is individually toggleable via its own `include_*`
 flag -- see [`data/DATA_SOURCE_LEDGER.md`](data/DATA_SOURCE_LEDGER.md) for
 the per-source breakdown.
 
+## Data sources at a glance
+
+| Source | Published | siRNAs | Genes |
+|---|---|---|---|
+| [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,532 | 41 |
+| [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 |
+| Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 |
+| Martinelli / sirna-repro | 2023 | 253 | 7 |
+| Monopoli, Korkin & Khvorova | 2023 | 20 | 4 |
+| PDCD1 panel (Xu, Zhao et al. / siRNABERT) | 2024 | 8 | 1 |
+| **Total** | | **16,439** | **105** |
+
+"Published" is the year of the paper/database each source comes from, not
+when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
+for full citations, license terms, and how each source's data was verified.
+"Genes" is how many distinct genes/reporters that source contributes to this
+dataset; some genes (e.g. `APP`, `MAPT`) are covered by more than one
+source, so the per-source counts don't sum to the 105 total. CMsiRNAdb's
+count combines its PCSK9 subset and the other-12-genes addition (same
+underlying paper) -- see the gene-level table below for the split.
+
 ## Genes in this dataset
 
 All 105 genes currently in `load_records()`'s default output, the source
@@ -202,6 +223,7 @@ src/sirna_data/
   rank_confidence.py           probability/confidence model for "how many top-K predictions to check"
   rank_confidence_cli.py       `sirna-rank-confidence` entry point ([project.scripts])
   rank_confidence_plot.py      optional matplotlib plotting for rank_confidence (requires [plot] extra)
+  rank_confidence_plot_cli.py  `sirna-rank-confidence-plot` entry point ([project.scripts], requires [plot] extra)
   __init__.py                  public API
   fetch/                       sirna-data-fetch CLI + per-source fetchers (see Install below)
     cli.py                       `sirna-data-fetch` entry point ([project.scripts])
@@ -219,6 +241,7 @@ tests/
   test_rank_confidence.py     unit tests for rank_confidence.py
   test_rank_confidence_cli.py unit tests for rank_confidence_cli.py
   test_rank_confidence_plot.py unit tests for rank_confidence_plot.py (skipped without the [plot] extra)
+  test_rank_confidence_plot_cli.py unit tests for rank_confidence_plot_cli.py (skipped without the [plot] extra)
   conftest.py                 shared pytest fixtures
 ```
 
@@ -419,6 +442,40 @@ the core package, and this function lives in its own
 import) specifically so nothing else in this package needs matplotlib.
 Returns the `matplotlib.axes.Axes` for further customization; pass an
 existing `ax=` to draw on it instead of creating a new figure.
+
+Per-point markers, marker size, and line style are all configurable via
+`marker` / `markersize` / `linestyle` (each forwarded straight to
+`Axes.plot`) -- e.g. `marker=None` for plain lines with no dots, useful
+once `k_values` gets dense enough that individual markers just clutter the
+curve:
+
+```python
+# Dots (default):
+plot_probability_vs_num_tests(pccs, n_items=4561, save_path="curves.png")
+
+# Plain lines, no per-point markers:
+plot_probability_vs_num_tests(pccs, n_items=4561, marker=None, save_path="curves.png")
+
+# Dashed lines with square markers:
+plot_probability_vs_num_tests(
+    pccs, n_items=4561, marker="s", linestyle="--", save_path="curves.png"
+)
+```
+
+Also installed: the `sirna-rank-confidence-plot` CLI, a thin wrapper
+around the same function that writes straight to a file --
+
+```
+sirna-rank-confidence-plot --pcc 0.2 0.4 0.6 --n-items 4561 \
+    --marker none --save-path curves.png
+```
+
+`--marker`/`--marker-size`/`--linestyle` mirror the Python function's
+`marker`/`markersize`/`linestyle` (pass `--marker none` or `--linestyle
+none` for no markers / no connecting line, respectively); `--labels` sets
+the legend text per `--pcc` value; `--k-max`/`--num-points`/`--k-values`
+control which K's get plotted. Run `sirna-rank-confidence-plot --help` for
+the full option list.
 
 ## Using this from another project
 

@@ -68,3 +68,38 @@ def test_plot_save_path_writes_a_file(tmp_path: Path):
     plot_probability_vs_num_tests([0.2, 0.7], 300, save_path=str(out_path))
     assert out_path.exists()
     assert out_path.stat().st_size > 0
+
+
+def test_plot_default_marker_is_a_dot():
+    ax = plot_probability_vs_num_tests([0.3], 200, k_values=[10, 20])
+    assert ax.get_lines()[0].get_marker() == "o"
+
+
+def test_plot_marker_none_disables_per_point_markers():
+    ax = plot_probability_vs_num_tests([0.3], 200, k_values=[10, 20], marker=None)
+    assert ax.get_lines()[0].get_marker() == "None"
+
+
+def test_plot_marker_empty_string_also_disables_markers():
+    ax = plot_probability_vs_num_tests([0.3], 200, k_values=[10, 20], marker="")
+    assert ax.get_lines()[0].get_marker() == "None"
+
+
+def test_plot_custom_marker_is_used():
+    ax = plot_probability_vs_num_tests([0.3], 200, k_values=[10, 20], marker="s")
+    assert ax.get_lines()[0].get_marker() == "s"
+
+
+def test_plot_custom_markersize_is_used():
+    ax = plot_probability_vs_num_tests([0.3], 200, k_values=[10, 20], markersize=9)
+    assert ax.get_lines()[0].get_markersize() == 9
+
+
+def test_plot_custom_linestyle_is_used():
+    ax = plot_probability_vs_num_tests([0.3], 200, k_values=[10, 20], linestyle="--")
+    assert ax.get_lines()[0].get_linestyle() == "--"
+
+
+def test_plot_default_linestyle_is_solid():
+    ax = plot_probability_vs_num_tests([0.3], 200, k_values=[10, 20])
+    assert ax.get_lines()[0].get_linestyle() == "-"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sirna-data-grabber"
-version = "0.3.0"
+version = "0.4.0"
 description = "Reusable loader for the siRNA knockdown-efficacy dataset (siRNAEfficacyDB + supplementary sources), plus the fetchers that built it."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -62,6 +62,9 @@ plot = ["matplotlib>=3.7"]
 [project.scripts]
 sirna-data-fetch = "sirna_data.fetch.cli:main"
 sirna-rank-confidence = "sirna_data.rank_confidence_cli:main"
+# Chart counterpart to sirna-rank-confidence -- multiple PCCs, --top-n,
+# --k-max range limiting -- requires the [plot] extra (matplotlib).
+sirna-rank-confidence-plot = "sirna_data.rank_confidence_plot_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
