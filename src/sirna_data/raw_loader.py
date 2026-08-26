@@ -323,7 +323,7 @@ def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> lis
     Luciferase_renilla, NPY). The remaining ~686 rows -- most notably a
     single patent that is 60% of the corpus -- could not be resolved this
     way and are not included here; see data/DATA_SOURCES.md for per-target
-    provenance and data/DATA_SOURCE_LEDGER.md for what's still unresolved
+    provenance for what's still unresolved
     and why.
 
     Unlike every other loader in this file, both strands are taken directly
@@ -402,7 +402,7 @@ def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> lis
 # repo ships, and the two loaders below do all filtering/collapsing here, in
 # code, at load time -- every caller reproduces their own local copy of the
 # derived data instead of downloading an adaptation from us. See
-# data/DATA_SOURCES.md and data/CMSIRNADB_FULL_RETRIEVAL.md.
+# data/DATA_SOURCES.md.
 #
 # (The two transcript FASTAs these loaders also read, cmsirnadb_transcripts
 # .fasta / cmsirnadb_full_transcripts.fasta, are independently fetched from

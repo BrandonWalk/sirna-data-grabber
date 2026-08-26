@@ -45,17 +45,17 @@ transformation happens in code at load time
 (`_load_cmsirnadb_records`/`_load_cmsirnadb_full_records` in
 `src/sirna_data/raw_loader.py`), not as a precomputed derivative file — so no
 adaptation of CMsiRNAdb's data is redistributed, only the original plus code
-that anyone can run themselves. See `data/CMSIRNADB_FULL_RETRIEVAL.md`.
+that anyone can run themselves. See `data/DATA_SOURCES.md`.
 
 ## Other files present in `data/raw/` but not used by anything in `sirna_data`
 
 These were investigated as candidate sources (see
-[`data/DATA_SOURCE_LEDGER.md`](data/DATA_SOURCE_LEDGER.md)) and kept for
+[`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)) and kept for
 reference/provenance, but nothing in `sirna_data` reads them:
 
 | File(s) | Source | License |
 |---|---|---|
-| `sirecords_efficacy.csv`, `sirecords_new_only.csv` | siRecords (04/28/05 release, via Internet Archive) | **Restricted, not established for redistribution.** Researched: the database's own paper (Ren et al. 2009, NAR 37:D146-D149) is CC BY-NC licensed as an *article*, but its DATA ACCESS section says bulk copies were only ever given to "academic users" who emailed the authors directly — not published as an open download. The data here was recovered from an Internet Archive snapshot, not that channel, so no license actually covers this copy. See `data/sirecords_overlap_analysis.md` for the full writeup and sources. Kept locally but excluded from git (`.gitignore`). |
+| `sirecords_efficacy.csv`, `sirecords_new_only.csv` | siRecords (04/28/05 release, via Internet Archive) | **Restricted, not established for redistribution.** Researched: the database's own paper (Ren et al. 2009, NAR 37:D146-D149) is CC BY-NC licensed as an *article*, but its DATA ACCESS section says bulk copies were only ever given to "academic users" who emailed the authors directly — not published as an open download. The data here was recovered from an Internet Archive snapshot, not that channel, so no license actually covers this copy. See `data/DATA_SOURCES.md` for the full writeup and sources. Kept locally but excluded from git (`.gitignore`). |
 
 ## If you're not sure whether your use is covered
 

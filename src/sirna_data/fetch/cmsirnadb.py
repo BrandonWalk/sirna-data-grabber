@@ -1,8 +1,7 @@
 """Fetch CMsiRNAdb's original, unmodified bulk TSV release, plus the NCBI
 RefSeq transcripts raw_loader.py's CMsiRNAdb loaders need.
 
-Sources (see ../../../data/DATA_SOURCES.md and
-../../../data/CMSIRNADB_FULL_RETRIEVAL.md for full attribution/license notes):
+Sources (see ../../../data/DATA_SOURCES.md for full attribution/license notes):
   - CMsiRNAdb (He et al. 2026, BMC Bioinformatics), CC BY-NC-ND 4.0. Its
     "No Derivatives" term means only the ORIGINAL, unmodified download may be
     redistributed -- this module writes exactly that file
