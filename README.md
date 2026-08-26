@@ -15,8 +15,8 @@ vendoring a copy of the data or the loading code.
 
 **Currently: 16,439 siRNA records across 105 genes** (`load_records()`
 default). Every source is individually toggleable via its own `include_*`
-flag -- see [`data/DATA_SOURCE_LEDGER.md`](data/DATA_SOURCE_LEDGER.md) for
-the per-source breakdown.
+flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
+per-source breakdown and audit.
 
 ## Data sources at a glance
 
@@ -205,14 +205,11 @@ LICENSE                    MIT license -- covers the code only, not data/raw/
 NOTICE.md                  per-source data license summary (see License section above)
 data/
   raw/                       fetched CSVs + FASTA transcripts (the actual dataset)
-  DATA_SOURCES.md            full provenance + license terms for every source
-  DATA_SOURCE_LEDGER.md      audit: what's trainable, what's not, and why
-  CMSIRNADB_FULL_RETRIEVAL.md   detail on the CMsiRNAdb full-database retrieval
-  DEMETER2_README.txt        upstream release notes for DepMap DEMETER2 (investigated, not included -- see FUNCTIONAL_GENOMICS_SCREENS.md)
-  FUNCTIONAL_GENOMICS_SCREENS.md   notes on functional-genomics screen sources considered
+  DATA_SOURCES.md            full provenance, license terms, and trainable-data
+                              audit for every source (including CMsiRNAdb full-
+                              database retrieval and the siRecords dedup analysis)
   POTENTIAL_DATA_SOURCES.md  landscape of sources investigated
-  sirecords_overlap_analysis.md    siRecords overlap/dedup analysis
-  data_source_ledger.csv     machine-readable companion to DATA_SOURCE_LEDGER.md
+  data_source_ledger.csv     machine-readable companion to DATA_SOURCES.md
   *.png                      figures referenced by the docs above
 src/sirna_data/
   raw_loader.py               load + merge every source into SiRNARecord rows
@@ -246,12 +243,12 @@ tests/
 ```
 
 Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
-dataset and where it came from; [`data/DATA_SOURCE_LEDGER.md`](data/DATA_SOURCE_LEDGER.md)
-for the bottom-line audit (6,838 trainable records across 95 genes, 6
-sources — 16,439 records / 105 genes if the optional CMsiRNAdb full-database
-retrieval is also included). Primary source is **siRNAEfficacyDB** (Zhang
-et al. 2024, CC BY-NC); see the docs for the rest and their individual
-license terms before reusing this data outside this project.
+dataset, where it came from, and the bottom-line audit (6,838 trainable
+records across 95 genes, 6 sources — 16,439 records / 105 genes if the
+optional CMsiRNAdb full-database retrieval is also included). Primary
+source is **siRNAEfficacyDB** (Zhang et al. 2024, CC BY-NC); see the docs
+for the rest and their individual license terms before reusing this data
+outside this project.
 
 ## Install
 
