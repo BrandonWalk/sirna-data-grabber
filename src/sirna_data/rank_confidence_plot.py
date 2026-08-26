@@ -38,6 +38,9 @@ def plot_probability_vs_num_tests(
     k_values: Sequence[int] | None = None,
     ax: Axes | None = None,
     save_path: str | None = None,
+    marker: str | None = "o",
+    markersize: float = 3,
+    linestyle: str = "-",
 ) -> Axes:
     """Line plot, one curve per PCC in `pccs`, of P(at least one of the true
     top `top_n` items is in the predicted top K) against K (number of
@@ -62,6 +65,15 @@ def plot_probability_vs_num_tests(
         figure and axes are created.
     save_path : if given, the figure is also written to this path (e.g.
         "curves.png") via `Axes.figure.savefig` before returning.
+    marker : per-point marker style, forwarded to `Axes.plot` (default
+        `"o"`, matplotlib's usual round dot). Pass `None` (or `""`) for a
+        plain line with no per-point markers -- useful when `k_values` is
+        dense enough that individual dots just clutter the curve.
+    markersize : marker size, forwarded to `Axes.plot` (default 3). Has no
+        visible effect when `marker` is `None`.
+    linestyle : line style, forwarded to `Axes.plot` (default `"-"`, a
+        solid line). Matplotlib style strings work here too (e.g. `"--"`,
+        `":"`, `"-."`, or `"None"` for markers with no connecting line).
 
     Returns
     -------
@@ -73,8 +85,16 @@ def plot_probability_vs_num_tests(
     if ax is None:
         _, ax = plt.subplots()
 
+    resolved_marker = marker if marker else None
     for p in pccs:
-        ax.plot(resolved_k_values, curves[p], marker="o", markersize=3, label=f"PCC = {p:g}")
+        ax.plot(
+            resolved_k_values,
+            curves[p],
+            marker=resolved_marker,
+            markersize=markersize,
+            linestyle=linestyle,
+            label=f"PCC = {p:g}",
+        )
 
     captured_label = "the true best item" if top_n == 1 else f"one of the true top {top_n} items"
     ax.set_xlabel("Number of top-predicted items checked (K)")
