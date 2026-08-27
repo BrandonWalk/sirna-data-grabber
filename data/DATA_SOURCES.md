@@ -8,8 +8,8 @@ suitable for a regression/classification target), and how much. For the broader
 landscape of sources considered — including ones never obtained or not pursued
 further — see `POTENTIAL_DATA_SOURCES.md`.
 
-- **Trainable records currently integrated: 6,838** across **95 genes**, all with a
-  numeric %-knockdown label. (16,439 records / 105 genes if the CMsiRNAdb full-database
+- **Trainable records currently integrated: 7,162** across **100 genes**, all with a
+  numeric %-knockdown label. (16,763 records / 110 genes if the CMsiRNAdb full-database
   retrieval below is also included — on by default via `include_cmsirnadb_full=True`.)
 - **6 sources** supply that data; **siRNAEfficacyDB (3,532)** and the **CMsiRNAdb PCSK9
   subset (2,756)** are 92% of it.
@@ -20,7 +20,7 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
   `modification_chemistry`/`sense_modifications`/`antisense_modifications` — see
   "Chemical modification data" below.
 
-### Integrated — trainable data (6,838 records)
+### Integrated — trainable data (7,162 records)
 
 | Source | Records | New genes | Metric | Notes |
 |---|---|---|---|---|
@@ -29,8 +29,8 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
 | **Shabalina 2006** | **269** | +41 | numeric (100−Activity) | 269 new after dedup vs 653 in paper; `shabalina_extra.csv`. |
 | **Monopoli 2023** | **20** | +4 (APP/MAPT/BACE1/SNCA) | numeric (100−reporter) | Modified sdRNA; `monopoli_extra.csv`. |
 | **PDCD1 panel (Xu/Zhao 2024, siRNABERT)** | **8** | +1 (PDCD1) | numeric (qPCR knockdown %) | Recovered from deleted file in repo's git history, verified against NM_005018.3; license unresolved but `pdcd1_extra.csv` is committed at the user's explicit request — see `NOTICE.md`. |
-| **Martinelli 2023 / sirna-repro** | **253** | +7 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA) | numeric (PCT) | 253 of 907 rows traced from no-gene-identity to a real target — see the section below. |
-| **TOTAL** | **6,838** | **95 genes** | — | — |
+| **Martinelli 2023 / sirna-repro** | **577** | +12 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA, KAZRIN, MIR155HG, CDKN1B, SOD2_chimp, CASR_rhesus) | numeric (PCT) | 577 of 907 rows resolved — 253 by source-document tracing, 324 more by brute-force sequence matching. See the section below. |
+| **TOTAL** | **7,162** | **100 genes** | — | — |
 
 ### Obtained, not integrated
 
@@ -224,7 +224,7 @@ products, so its prepared data files are not safe to vendor into this project.
 - Fetched by `sirna_data.fetch.shabalina` (`sirna-data-fetch`) into
   `data/raw/shabalina_extra.csv` and `data/raw/shabalina_transcripts.fasta`.
 
-## Supplementary siRNA data: Martinelli 2023 / sirna-repro (253 of 907 rows, 7 new genes/reporters)
+## Supplementary siRNA data: Martinelli 2023 / sirna-repro (577 of 907 rows, 12 new genes/reporters)
 
 - Martinelli 2023, bioRxiv preprint / `sirna-repro` (siRNAmod-derived
   reproduction dataset). 907 chemically-modified siRNAs pooled from 30
@@ -241,9 +241,9 @@ products, so its prepared data files are not safe to vendor into this project.
   strand's first 19nt ("core", excluding each row's own 2nt 3' synthetic
   overhang) was checked for exact substring containment in the real target
   transcript, fetched fresh from NCBI/GenBank for that purpose.
-- **253 of 907 rows (27.9%) resolved this way, across 7 distinct real
-  targets** — +7 genes/reporters (98 → **105 genes**) for
-  leave-one-gene-out CV:
+- **Pass 1 — source-document tracing: 253 of 907 rows (27.9%) resolved this
+  way, across 7 distinct real targets** — +7 genes/reporters (98 → **105
+  genes**) for leave-one-gene-out CV:
 
   | Gene/reporter | Rows | Reference accession | Source PMIDs |
   |---|---|---|---|
@@ -284,24 +284,56 @@ products, so its prepared data files are not safe to vendor into this project.
   (NM_001025366.3) directly and cleanly on both strands -- no correction
   needed, just a reference sequence (VEGFA) not previously in this
   project's Martinelli reference set.
-- **The remaining ~654 rows (72.1%) are NOT included** and remain
+- **Pass 2 — brute-force sequence matching (a follow-up pass over the
+  ~654 rows pass 1 left unresolved): 324 more rows resolved, +5 more
+  genes** — +12 genes/reporters total (98 → **110 genes**) for
+  leave-one-gene-out CV. Rather than trying to trace each source
+  document's stated target first, this pass fetched candidate reference
+  transcripts and checked every still-unresolved sense strand against them
+  by exact 19nt substring match directly — the same verification standard
+  as pass 1, just reached from the reference sequence inward instead of
+  from the citation outward:
+
+  | Gene/reporter | Rows | Reference accession | Source |
+  |---|---|---|---|
+  | `Luciferase_firefly` (GL2 site) | 64 | X65324 (pGL2-Control) | PMID 17924376 (37), 15919084 (20), 17150641 (7) — all three papers used the classic Elbashir/Tuschl "GL2" anti-firefly-luciferase siRNA (`CGUACGCGGAAUACUUCGA`), a different target site from the pGL3-Control (`luc+`) site already covered by pass 1's `Luciferase_firefly` rows. Kept under the same `Luciferase_firefly` gene label since it's the same protein target — `Accession_number` distinguishes the two sites (U47296 vs X65324) per row. |
+  | `KAZRIN` | 39 | NM_201628 | US20120088815A1/EP2415869A1 |
+  | `MIR155HG` (BIC) | 42 | NR_001458 | US20120088815A1/EP2415869A1 |
+  | `CDKN1B` | 60 | NM_004064 | US20120088815A1/EP2415869A1 |
+  | `SOD2_chimp` | 51 | NM_001009022 (*Pan troglodytes*) | US20120088815A1/EP2415869A1 |
+  | `CASR_rhesus` | 68 | XM_001111972 (*Macaca mulatta*, PREDICTED) | US20120088815A1/EP2415869A1 |
+
+  The five patent-derived genes came from that patent's own "Example"
+  sections, which give a fully-worked case per gene (e.g. "Human KAZRIN
+  (Genbank Accession No. NM_201628) ... nucleotides 718-738 ... SEQ ID
+  NO:2") — but rather than trust the patent's SEQ ID NO pairing (a small
+  summarization pass over a document this large is not reliable enough to
+  copy numbers from directly), each of the five genes' real RefSeq/GenBank
+  transcript was fetched independently and matched against all 544
+  then-unresolved patent rows by exact substring search, letting the
+  sequence data itself confirm or refute every assignment. `SOD2_chimp`
+  and `CASR_rhesus` are kept as species-tagged gene labels distinct from
+  any future human `SOD2`/`CASR` addition, the same convention already
+  used for Shabalina's `F3_human`/`F3_mouse` pair. 309 of these 324 rows
+  (95.4%) locate with full 30nt flanking mRNA context; the rest fall back
+  to duplex-only context. All 324 matches are forward-orientation (sense
+  strand identical to the mRNA window, not its reverse complement) — no
+  further sense/antisense correction needed, unlike pass 1's 28-row fix.
+- **The remaining ~330 rows are NOT included** and remain
   unresolved:
-  - The single largest chunk (**544 rows, ~60% of the whole corpus**) comes
-    from one patent, US20120088815A1/EP2415869A1. Its own text confirms it
-    tested "target genes in table 1-182" (up to 182 real genes) via a
-    luciferase-reporter assay, but the actual gene names are not present in
-    the fetched patent text, and identifying ~182 genes from bare 19-mer
-    sequences alone would require BLAST access, unavailable in this
-    environment.
-  - PMID 17924376 (37 rows remaining, after 21 resolved to
-    Luciferase_renilla) and PMID 15919084 (20 rows): luciferase claimed by
-    the source paper, but the dominant candidate sequence doesn't match the
-    confirmed firefly (U47296.1) or Renilla (AF025846.1) reference used
-    above, nor does its antisense-reverse-complement -- possibly a
-    different luciferase vector/variant (pGL2/pGL4/codon-optimized *luc2*,
-    etc.) not yet checked.
+  - The single largest chunk (**284 rows, ~86% of what's left**) is the
+    remainder of patent US20120088815A1/EP2415869A1 (pass 2 above resolved
+    260 of the patent's 544 rows to 5 genes found in the patent's own
+    worked examples). The patent's own text says it tested "target genes
+    in table 1-182" via a luciferase-reporter assay; the fetched portion of
+    the document only reaches tables 1-51, so the genes covered by tables
+    52-182 remain unidentified — reaching them would need either full
+    access to the rest of this very large document or BLAST access,
+    neither available in this environment.
   - PMID 16598842 (15 rows): not yet investigated (only found as a citation
-    in other papers' reference lists, not fetched directly).
+    in other papers' reference lists, not fetched directly — the paper's
+    full text sits behind an Elsevier paywall not reachable from this
+    environment).
   - PMID 23820891 (6 rows), "5' Unlocked Nucleic Acid Modification Improves
     siRNA Targeting" (Snead et al. 2013, PMC3732871): confirmed via full
     text to target the HIV-1 transcript (an siRNA called "siH5", assayed
@@ -314,10 +346,18 @@ products, so its prepared data files are not safe to vendor into this project.
   - PMID 21141919 (4 rows) and PMID 22982308 (2 rows): both titled/abstracted
     as anti-MDR1 (ABCB1) work and share a near-identical sequence across
     both papers, but neither the sense field nor the antisense-reverse-
-    complement of any of these 6 rows matches human ABCB1 (NM_000927.5) --
-    left unresolved rather than guessed (could be a rodent Mdr1a/Mdr1b
-    ortholog or a different ABCB1 transcript variant/isoform not yet
-    checked).
+    complement of any of these 6 rows matches human ABCB1 (NM_000927.5),
+    nor mouse Abcb1a (NM_011076) or Abcb1b (NM_011075) -- left unresolved;
+    the papers' own full text (not reachable from this environment) would
+    be needed to confirm the actual species/isoform/paralog.
+  - PMID 15653644 (2 rows), 25699137 (2 rows), 22260772 (2 rows): small
+    remainders in three papers otherwise resolved above (EGFP/Luciferase/
+    NPY/APOB). 15653644's own text confirms it also tested an siRNA
+    against the SARS-CoV genome (a 5th target the paper describes but
+    doesn't give in its own tables) -- almost certainly these 2 rows,
+    viral and out of scope, not pursued further. 25699137's and 22260772's
+    remaining sequences don't match any reference already fetched for this
+    project and their full text wasn't reachable this round.
   - PMID 20005874 (3 rows): confirmed via abstract to target coxsackievirus
     B3 -- viral, not pursued.
   - A handful of smaller/single-row documents (~10 rows total) not yet
@@ -329,7 +369,7 @@ products, so its prepared data files are not safe to vendor into this project.
   (each with its own overhang and modification descriptor), and using the
   source's real antisense preserves that detail instead of reconstructing
   an idealized one.
-- **Chemical modification**: every one of the 253 rows carries a real,
+- **Chemical modification**: every one of the 577 rows carries a real,
   non-placeholder per-molecule modification descriptor — locked nucleic
   acid, hexitol nucleic acid, 2'-fluoro, 2'-O-methyl, 2'-deoxy, unlocked
   nucleic acid, and 4-thioribose all appear. `is_modified`/
@@ -337,13 +377,14 @@ products, so its prepared data files are not safe to vendor into this project.
   unlike CMsiRNAdb), the annotation is per-molecule, not per-position, so
   `sense_modifications`/`antisense_modifications` stay `None`.
 - Loaded by `_load_martinelli_records` in `src/sirna_data/raw_loader.py`
-  from `data/raw/martinelli_extra.csv` (the 253-row derivative with added
-  gene/accession columns, and corrected sense sequences for the 28 rows
-  noted above) and `data/raw/martinelli_transcripts.fasta` (the 7 reference
-  sequences above). **License**: the source `sirna-repro` dataset is CC
-  BY-NC 4.0, which — unlike CMsiRNAdb's CC BY-NC-ND — permits derivatives,
-  so this filtered/gene-annotated subset is committed to the repo like
-  Monopoli/Shabalina, not gitignored like PDCD1/siRecords.
+  from `data/raw/martinelli_extra.csv` (the 577-row derivative with added
+  gene/accession columns, and corrected sense sequences for the 28 pass-1
+  rows noted above) and `data/raw/martinelli_transcripts.fasta` (the 13
+  reference sequences above, 7 from pass 1 plus 6 from pass 2). **License**:
+  the source `sirna-repro` dataset is CC BY-NC 4.0, which — unlike
+  CMsiRNAdb's CC BY-NC-ND — permits derivatives, so this filtered/
+  gene-annotated subset is committed to the repo like Monopoli/Shabalina,
+  not gitignored like PDCD1/siRecords.
 
 ## Supplementary siRNA data: CMsiRNAdb, human PCSK9 subset (2,756 rows, 1 new gene)
 
@@ -662,15 +703,16 @@ what was actually assayed.
   `POTENTIAL_DATA_SOURCES.md`) -- same chemistry class as Monopoli
   (Monopoli's model was trained on it), but blocked from integration by
   its own no-gene-identity problem, unrelated to modification data.
-- **Martinelli 2023 / sirna-repro** (253 of 907 rows integrated -- see the
+- **Martinelli 2023 / sirna-repro** (577 of 907 rows integrated -- see the
   dedicated section above) -- a genuine per-siRNA (not per-position)
   modification-type column (e.g. "hexitol nucleic acid", "2-fluoro
-  2-O-methyl", or "0" for unmodified); every one of the 253 gene-resolved
+  2-O-methyl", or "0" for unmodified); every one of the 577 gene-resolved
   rows carries real modification data, wired up via `is_modified`/
-  `modification_chemistry` like Monopoli2023. The other ~654 rows remain
-  blocked by the no-gene-identity problem that also blocks Shmushkovich (or,
-  for a handful of newly-identified documents, by being viral rather than
-  human targets, or unconfirmed against candidate references).
+  `modification_chemistry` like Monopoli2023. The other ~330 rows remain
+  blocked, mostly by the same still-unreached portion (tables 52-182) of
+  patent US20120088815A1, plus a handful of smaller papers whose full text
+  wasn't reachable this round or that turned out to be viral rather than
+  human targets.
 - **5 FDA-approved drugs external-validation set** -- the AttSiOff source
   table had 2'-F/2'-O-Me/phosphorothioate notation, but it was parsed down
   to plain bases during the original verification work (see that section

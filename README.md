@@ -13,7 +13,7 @@ command that re-fetches it from its original sources. Any project that wants
 this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
-**Currently: 16,439 siRNA records across 105 genes** (`load_records()`
+**Currently: 16,763 siRNA records across 110 genes** (`load_records()`
 default). Every source is individually toggleable via its own `include_*`
 flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
 per-source breakdown and audit.
@@ -25,10 +25,10 @@ per-source breakdown and audit.
 | [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,532 | 41 |
 | [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 |
 | Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 |
-| Martinelli / sirna-repro | 2023 | 253 | 7 |
+| Martinelli / sirna-repro | 2023 | 577 | 12 |
 | Monopoli, Korkin & Khvorova | 2023 | 20 | 4 |
 | PDCD1 panel (Xu, Zhao et al. / siRNABERT) | 2024 | 8 | 1 |
-| **Total** | | **16,439** | **105** |
+| **Total** | | **16,763** | **110** |
 
 "Published" is the year of the paper/database each source comes from, not
 when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
@@ -41,7 +41,7 @@ underlying paper) -- see the gene-level table below for the split.
 
 ## Genes in this dataset
 
-All 105 genes currently in `load_records()`'s default output, the source
+All 110 genes currently in `load_records()`'s default output, the source
 dataset(s) each came from, how many siRNA records target that gene, and the
 length of the real mRNA/GenBank transcript its target sites were located in.
 Computed directly from the fetched `data/raw/` files, not hand-maintained --
@@ -49,7 +49,7 @@ for genes with more than one distinct transcript accession across records
 (marked [^multi]), the length shown is for the one used by the most records.
 
 <details>
-<summary>Show all 105 genes</summary>
+<summary>Show all 110 genes</summary>
 
 | Gene | Source dataset | siRNAs | Transcript length (nt) |
 |---|---|---|---|
@@ -64,10 +64,12 @@ for genes with more than one distinct transcript accession across records
 | BACE1 | Monopoli 2023 | 3 | 5,835 |
 | C6orf110 | siRNAEfficacyDB | 145 | 3,465 |
 | Cacnb1 | siRNAEfficacyDB | 46 | 3,393 |
+| CASR_rhesus | Martinelli 2023 / sirna-repro | 68 | 3,144 |
 | CBL | Shabalina 2006 | 5 | 11,168 |
 | CBLB | Shabalina 2006 | 5 | 3,354 |
 | CDC34 | siRNAEfficacyDB | 57 | 1,418 |
 | CDKN1A | Shabalina 2006 | 5 | 2,117 |
+| CDKN1B | Martinelli 2023 / sirna-repro | 60 | 2,410 |
 | CSK | Shabalina 2006 | 5 | 2,743 |
 | CTNNB1 | CMsiRNAdb (full) | 352 | 3,488 |
 | Cyclophilin B | siRNAEfficacyDB | 90 | 851 |
@@ -99,14 +101,16 @@ for genes with more than one distinct transcript accession across records
 | INHBE | CMsiRNAdb (full) | 670 | 2,460 [^multi] |
 | IRS1 | Shabalina 2006 | 5 | 9,771 |
 | ITGB1 | Shabalina 2006 | 5 | 3,735 |
+| KAZRIN | Martinelli 2023 / sirna-repro | 39 | 2,641 |
 | Lamin A | siRNAEfficacyDB | 44 | 9,756 |
 | LPA | CMsiRNAdb (full) | 556 | 6,431 [^multi] |
-| Luciferase_firefly | Martinelli 2023 / sirna-repro | 58 | 1,932 |
+| Luciferase_firefly | Martinelli 2023 / sirna-repro | 122 | 6,047 [^multi] |
 | Luciferase_renilla | Martinelli 2023 / sirna-repro | 43 | 1,969 |
 | LYPD1 | Shabalina 2006 | 14 | 3,458 |
 | MAPK14 | Shabalina 2006 | 8 | 4,222 |
 | MAPT | CMsiRNAdb (full) + Monopoli 2023 | 635 | 6,816 [^multi] |
 | MARC1 | CMsiRNAdb (full) | 823 | 1,020 [^multi] |
+| MIR155HG | Martinelli 2023 / sirna-repro | 42 | 1,500 |
 | MMAC1 | siRNAEfficacyDB | 36 | 3,160 |
 | Mmp7 | siRNAEfficacyDB | 150 | 1,043 |
 | MSTN | CMsiRNAdb (full) | 9 | 2,705 [^multi] |
@@ -137,6 +141,7 @@ for genes with more than one distinct transcript accession across records
 | SEPTIN2 | Shabalina 2006 | 5 | 3,251 |
 | SKP1 | Shabalina 2006 | 5 | 2,616 |
 | SNCA | Monopoli 2023 | 4 | 3,177 |
+| SOD2_chimp | Martinelli 2023 / sirna-repro | 51 | 600 |
 | SOST | siRNAEfficacyDB | 75 | 2,296 |
 | TC10 | siRNAEfficacyDB | 67 | 4,780 |
 | TCAP | siRNAEfficacyDB | 144 | 1,532 |
@@ -243,8 +248,8 @@ tests/
 ```
 
 Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
-dataset, where it came from, and the bottom-line audit (6,838 trainable
-records across 95 genes, 6 sources — 16,439 records / 105 genes if the
+dataset, where it came from, and the bottom-line audit (7,162 trainable
+records across 100 genes, 6 sources — 16,763 records / 110 genes if the
 optional CMsiRNAdb full-database retrieval is also included). Primary
 source is **siRNAEfficacyDB** (Zhang et al. 2024, CC BY-NC); see the docs
 for the rest and their individual license terms before reusing this data
