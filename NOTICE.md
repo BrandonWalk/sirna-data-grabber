@@ -22,6 +22,7 @@ per source.
 | Monopoli et al. 2023 | `monopoli_extra.csv` | CC BY 4.0 | Yes, with attribution |
 | PDCD1 panel (Xu/Zhao et al. 2024, siRNABERT repo) | `pdcd1_extra.csv` | **Unresolved — no LICENSE file in the source repo, paper not confirmed open-access.** Committed at the user's explicit request despite this; see below. | Unclear — do not assume |
 | Shabalina et al. 2006 | `shabalina_extra.csv` | CC BY 2.0 | Yes, with attribution |
+| OligoGraph repo (Sciabola et al. 2013 + Harborth et al. 2001) | `oligograph_extra.csv` | **Unresolved — no LICENSE file in the source repo.** | Unclear — do not assume |
 | CMsiRNAdb (He et al. 2026) | `cmsirnadb_full_raw.tsv` | CC BY-NC-ND 4.0 | **No** — non-commercial only, and the "ND" term means only the original unmodified file may be redistributed (see below) |
 | NCBI RefSeq/GenBank transcripts | `*_transcripts.fasta` | Public domain | Yes, unrestricted |
 

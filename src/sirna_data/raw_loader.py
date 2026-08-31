@@ -391,6 +391,78 @@ def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> lis
     return records
 
 
+def _load_oligograph_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
+    """OligoGraph (github.com/drugparadigm/OligoGraph) training compilation:
+    343 rows genuinely new to this corpus (gene identity independently
+    verified by exact 19nt substring match against real NCBI RefSeq
+    transcripts), drawn from two of OligoGraph's four source CSVs --
+    Simone.csv (300 rows: HIF1A, HK2, HPSE; traced to Sciabola et al.
+    2013's "HUVK" training compilation) and Mix.csv (43 rows: Lamin A/C,
+    traced to Harborth et al. 2001, folded into this corpus's existing
+    "Lamin A" gene group rather than a separate LMNA entry). Hu.csv and
+    Taka.csv contribute nothing here -- Hu.csv's rows all overlap
+    sequences already in this corpus, and Taka.csv has no discoverable
+    literature citation at all.
+
+    IMPORTANT CAVEAT ON THE LABEL: OligoGraph does not ship the original
+    papers' reported %-knockdown values. It ships only its own `label`
+    column, a value in ~[0, 1] with no documented derivation anywhere in
+    the OligoGraph repo (checked its preprocessing script and README --
+    neither defines it). Attempting to reverse-engineer a true-value
+    conversion empirically failed: a linear fit of label against this
+    corpus's own known %Inhibition values was exact for Hu.csv (R^2=1.0,
+    slope=134.1) but that same formula broke down badly on Mix.csv
+    (R^2=0.82, the same label value mapping to 4 different true
+    percentages) -- consistent with each OligoGraph source file being
+    independently max-normalized to its own scale rather than sharing one
+    true global conversion. The primary sources themselves (Sciabola et
+    al. 2013 Supplementary Table S4; Harborth et al. 2001) could not be
+    reached to pull the real reported numbers directly -- see
+    data/DATA_SOURCES.md and data/POTENTIAL_DATA_SOURCES.md history for
+    exactly what was attempted and blocked.
+
+    Given that, `label` is used directly here as %KD (`label * 100`) per
+    explicit instruction -- this is a stated interpretation of an
+    undocumented normalized value, NOT an independently verified true
+    reported knockdown percentage. Treat this subset accordingly if the
+    exact label scale matters for your use.
+    """
+    data_dir = data_dir or DATA_DIR
+    csv_path = data_dir / "oligograph_extra.csv"
+    fasta_path = data_dir / "oligograph_transcripts.fasta"
+    if not csv_path.exists() or not fasta_path.exists():
+        return []
+
+    df = pd.read_csv(csv_path)
+    transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
+
+    records: list[SiRNARecord] = []
+    for i, row in df.iterrows():
+        sense = row["Sequence"].upper()
+        guide_seq = _revcomp(sense)
+        transcript = transcripts.get(row["Accession_number"])
+        mrna_window, window_site_start, has_flanking_context = _locate_window(
+            sense, transcript, flank_nt
+        )
+        records.append(
+            SiRNARecord(
+                row_id=f"oligograph_row{i}",
+                gene=row["Gene"],
+                accession=row["Accession_number"],
+                guide_seq=guide_seq,
+                duplex_len=len(guide_seq),
+                mrna_window=mrna_window,
+                site_start=window_site_start,
+                site_len=len(sense),
+                has_flanking_context=has_flanking_context,
+                label=float(row["Pct_Inhibition"]),
+                technology="Reporter/qPCR knockdown assay (OligoGraph training compilation)",
+                source=f"OligoGraph_{row['Source_Paper']}",
+            )
+        )
+    return records
+
+
 # --- CMsiRNAdb (He et al. 2026, BMC Bioinformatics) ------------------------
 #
 # CMsiRNAdb is CC BY-NC-ND 4.0. The "ND" (No Derivatives) term means we can
@@ -750,6 +822,7 @@ def load_records(
     include_pdcd1: bool = True,
     include_shabalina: bool = True,
     include_martinelli: bool = True,
+    include_oligograph: bool = True,
     include_cmsirnadb: bool = True,
     include_cmsirnadb_full: bool = True ) -> list[SiRNARecord]:
     """Load the full merged siRNA-efficacy dataset as a list of SiRNARecord.
@@ -792,6 +865,8 @@ def load_records(
         records += _load_shabalina_records(flank_nt, resolved_dir)
     if include_martinelli:
         records += _load_martinelli_records(flank_nt, resolved_dir)
+    if include_oligograph:
+        records += _load_oligograph_records(flank_nt, resolved_dir)
     if include_cmsirnadb:
         records += _load_cmsirnadb_records(flank_nt, resolved_dir)
     if include_cmsirnadb_full:

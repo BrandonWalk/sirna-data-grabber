@@ -8,11 +8,11 @@ suitable for a regression/classification target), and how much. For the broader
 landscape of sources considered — including ones never obtained or not pursued
 further — see `POTENTIAL_DATA_SOURCES.md`.
 
-- **Trainable records currently integrated: 7,162** across **100 genes**, all with a
-  numeric %-knockdown label. (16,763 records / 110 genes if the CMsiRNAdb full-database
+- **Trainable records currently integrated: 7,505** across **103 genes**, all with a
+  numeric %-knockdown label. (17,106 records / 113 genes if the CMsiRNAdb full-database
   retrieval below is also included — on by default via `include_cmsirnadb_full=True`.)
-- **6 sources** supply that data; **siRNAEfficacyDB (3,532)** and the **CMsiRNAdb PCSK9
-  subset (2,756)** are 92% of it.
+- **7 sources** supply that data; **siRNAEfficacyDB (3,532)** and the **CMsiRNAdb PCSK9
+  subset (2,756)** are 84% of it.
 - **siRecords** was recovered (3,117 rated records, ~1,400 new gene accessions) but is
   **NOT trainable as-is** — its label is a 4-level ordinal rating, not a numeric
   percentage. See "Considered, not integrated: siRecords" below.
@@ -20,7 +20,7 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
   `modification_chemistry`/`sense_modifications`/`antisense_modifications` — see
   "Chemical modification data" below.
 
-### Integrated — trainable data (7,162 records)
+### Integrated — trainable data (7,505 records)
 
 | Source | Records | New genes | Metric | Notes |
 |---|---|---|---|---|
@@ -30,7 +30,8 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
 | **Monopoli 2023** | **20** | +4 (APP/MAPT/BACE1/SNCA) | numeric (100−reporter) | Modified sdRNA; `monopoli_extra.csv`. |
 | **PDCD1 panel (Xu/Zhao 2024, siRNABERT)** | **8** | +1 (PDCD1) | numeric (qPCR knockdown %) | Recovered from deleted file in repo's git history, verified against NM_005018.3; license unresolved but `pdcd1_extra.csv` is committed at the user's explicit request — see `NOTICE.md`. |
 | **Martinelli 2023 / sirna-repro** | **577** | +12 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA, KAZRIN, MIR155HG, CDKN1B, SOD2_chimp, CASR_rhesus) | numeric (PCT) | 577 of 907 rows resolved — 253 by source-document tracing, 324 more by brute-force sequence matching. See the section below. |
-| **TOTAL** | **7,162** | **100 genes** | — | — |
+| **OligoGraph repo (Sciabola 2013 + Harborth 2001)** | **343** | +3 (HIF1A, HK2, HPSE; the 43 Harborth-traced rows merge into the existing Lamin A group) | `label * 100`, **interpreted as %KD** (not independently verified — see the section below) | Gene identity independently verified by exact 19nt match; the metric is a stated interpretation of an undocumented normalized value, not a confirmed true value. |
+| **TOTAL** | **7,505** | **103 genes** | — | — |
 
 ### Obtained, not integrated
 
@@ -385,6 +386,84 @@ products, so its prepared data files are not safe to vendor into this project.
   CMsiRNAdb's CC BY-NC-ND — permits derivatives, so this filtered/
   gene-annotated subset is committed to the repo like Monopoli/Shabalina,
   not gitignored like PDCD1/siRecords.
+
+## Supplementary siRNA data: OligoGraph repo (343 rows, 3 new genes; label interpreted as %KD)
+
+- github.com/drugparadigm/OligoGraph — a public training-data repo for an
+  siRNA-efficacy GNN, cloned directly (its web UI is unreliable/blocked for
+  this purpose — repeatedly misreported the repo's actual file structure).
+  Ships 4 CSVs: `Hu.csv` (2,472 rows), `Mix.csv` (472 rows), `Taka.csv`
+  (~3,412 rows), `Simone.csv` (322 rows), each with `siRNA`/`mRNA`/`label`
+  columns (`mRNA` = sense/target-context strand, `siRNA` = its exact reverse
+  complement — verified programmatically for 20 sample rows across files,
+  matches this project's own loader convention of storing the sense strand
+  and deriving `guide_seq` by reverse-complementing it).
+- **Overlap check**: every OligoGraph sequence was checked against this
+  project's full existing corpus by exact-core-sequence match. `Hu.csv`'s
+  2,361 overlapping rows are all already present here (from siRNAEfficacyDB
+  and others) and add nothing new. `Taka.csv` has no discoverable literature
+  citation at all (checked several candidate papers, none matched) and was
+  not pursued. `Mix.csv` and `Simone.csv` are where the genuinely new
+  content is.
+- **Gene identity — independently verified, not trusted from any file/table
+  label**: 343 rows (300 from `Simone.csv`, 43 from `Mix.csv`) were matched
+  by exact 19nt substring search of the sense strand against real NCBI
+  RefSeq transcripts, fetched fresh for this purpose. All 343 located with
+  full 30nt flanking mRNA context.
+
+  | Gene | Rows | Reference accession | Traced to |
+  |---|---|---|---|
+  | `HIF1A` | 100 | NM_001530.4 | Sciabola et al. 2013 |
+  | `HK2` | 95 | NM_000189.5 | Sciabola et al. 2013 |
+  | `HPSE` | 105 | NM_006665.5 | Sciabola et al. 2013 |
+  | `Lamin A` (merged into the existing gene group, not a new `LMNA` label) | 43 | NM_170707.4 | Harborth et al. 2001 (via Sciabola 2013's compilation) |
+
+  `Simone.csv`'s 300 rows trace to Sciabola et al. 2013's "HUVK" siRNA
+  training compilation (via its title/scope match plus a literature search;
+  the paper's own Supplementary Table S4 could not be fetched to confirm
+  row-for-row — see the metric caveat below). `Mix.csv`'s 43 lamin-A/C rows
+  are labeled by Sciabola 2013 as citing Harborth et al. 2001 — but
+  Harborth's own paper (read in full via an open academia.edu mirror) does
+  not actually contain a 44-siRNA panel with individual values; it
+  describes a single validated lamin A/C siRNA used as one tool within a
+  21-gene essential-gene screen. So these 43 rows' real origin is most
+  likely Huesken et al. 2005's large-scale tiling-array supplementary data
+  (the systematic source Sciabola's compilation most plausibly drew the
+  numeric values from), not Harborth's paper itself — not yet independently
+  confirmed.
+- **THE METRIC — read this before using this subset for anything where the
+  label's exact scale matters.** OligoGraph does not ship the original
+  papers' reported %-knockdown values, only its own `label` column (~0–1
+  range), which is undocumented anywhere in the OligoGraph repo (its own
+  `Preprocess2.py` preprocessing script and README were both checked —
+  neither defines it). An initial attempt fit `label * 134.1 = true
+  %Inhibition` from `Hu.csv`'s 2,361 overlapping rows (R²=1.0, seemingly
+  exact) — but the same formula, tested against `Mix.csv`'s own 420
+  overlapping rows, gave R²=0.82 with concrete counterexamples (the same
+  `label=0.25` value mapping to four different true percentages: 62, 62, 0,
+  -27). `Hu.csv`, `Mix.csv`, and `Taka.csv` each independently max out at
+  exactly `label=1.0` — consistent with each source file being
+  max-normalized to its own scale by whatever pipeline built these CSVs,
+  not one shared constant across the repo. `Simone.csv` has zero rows
+  overlapping this project's existing corpus, so the formula was never even
+  checkable against it. Pulling the true values directly from the primary
+  sources was attempted and blocked: Sciabola et al. 2013's Supplementary
+  Table S4 returns HTTP 403 from Oxford's CDN; PubMed, PMC, and the journal
+  page itself are reCAPTCHA/paywall-blocked; Europe PMC's API is
+  rate-limited. **Given that, `label * 100` is used directly as %KD here per
+  explicit instruction — a stated interpretation of an undocumented
+  normalized value, not an independently verified true reported knockdown
+  percentage.** Anyone relying on this subset for anything where the exact
+  scale matters should treat it accordingly, and revisit if Huesken et al.
+  2005's own supplementary data (the more plausible true source for the
+  `Mix.csv` rows) or Sciabola 2013's Table S4 become reachable.
+- Loaded by `_load_oligograph_records` in `src/sirna_data/raw_loader.py`
+  from `data/raw/oligograph_extra.csv` (343-row derivative:
+  `Sequence,Gene,Accession_number,Pct_Inhibition,Source_Paper`) and
+  `data/raw/oligograph_transcripts.fasta` (4 reference sequences). **License**:
+  OligoGraph's own repo carries no explicit license file — treated as
+  all-rights-reserved by default, same convention as the PDCD1 panel; see
+  `NOTICE.md`.
 
 ## Supplementary siRNA data: CMsiRNAdb, human PCSK9 subset (2,756 rows, 1 new gene)
 

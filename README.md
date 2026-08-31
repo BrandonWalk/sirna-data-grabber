@@ -13,7 +13,7 @@ command that re-fetches it from its original sources. Any project that wants
 this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
-**Currently: 16,763 siRNA records across 110 genes** (`load_records()`
+**Currently: 17,106 siRNA records across 113 genes** (`load_records()`
 default). Every source is individually toggleable via its own `include_*`
 flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
 per-source breakdown and audit.
@@ -28,7 +28,8 @@ per-source breakdown and audit.
 | Martinelli / sirna-repro | 2023 | 577 | 12 |
 | Monopoli, Korkin & Khvorova | 2023 | 20 | 4 |
 | PDCD1 panel (Xu, Zhao et al. / siRNABERT) | 2024 | 8 | 1 |
-| **Total** | | **16,763** | **110** |
+| OligoGraph repo (Sciabola 2013 + Harborth 2001) | 2013/2001 | 343 | 3 |
+| **Total** | | **17,106** | **113** |
 
 "Published" is the year of the paper/database each source comes from, not
 when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
@@ -41,7 +42,7 @@ underlying paper) -- see the gene-level table below for the split.
 
 ## Genes in this dataset
 
-All 110 genes currently in `load_records()`'s default output, the source
+All 113 genes currently in `load_records()`'s default output, the source
 dataset(s) each came from, how many siRNA records target that gene, and the
 length of the real mRNA/GenBank transcript its target sites were located in.
 Computed directly from the fetched `data/raw/` files, not hand-maintained --
@@ -49,7 +50,7 @@ for genes with more than one distinct transcript accession across records
 (marked [^multi]), the length shown is for the one used by the most records.
 
 <details>
-<summary>Show all 110 genes</summary>
+<summary>Show all 113 genes</summary>
 
 | Gene | Source dataset | siRNAs | Transcript length (nt) |
 |---|---|---|---|
@@ -91,7 +92,10 @@ for genes with more than one distinct transcript accession across records
 | GAPDH | siRNAEfficacyDB | 20 | 1,285 |
 | GSK3A | Shabalina 2006 | 5 | 2,193 |
 | GSK3B | Shabalina 2006 | 5 | 7,782 |
+| HIF1A | OligoGraph repo (Sciabola 2013) | 100 | 3,946 |
 | HIP2 | siRNAEfficacyDB | 79 | 5,153 |
+| HK2 | OligoGraph repo (Sciabola 2013) | 95 | 5,624 |
+| HPSE | OligoGraph repo (Sciabola 2013) | 105 | 4,669 |
 | HRAS | Shabalina 2006 | 10 | 570 |
 | HSD17B13 | CMsiRNAdb (full) | 1,985 | 2,260 [^multi] |
 | HSPC150 | siRNAEfficacyDB | 77 | 878 |
@@ -102,7 +106,7 @@ for genes with more than one distinct transcript accession across records
 | IRS1 | Shabalina 2006 | 5 | 9,771 |
 | ITGB1 | Shabalina 2006 | 5 | 3,735 |
 | KAZRIN | Martinelli 2023 / sirna-repro | 39 | 2,641 |
-| Lamin A | siRNAEfficacyDB | 44 | 9,756 |
+| Lamin A | siRNAEfficacyDB + OligoGraph repo (Harborth 2001) | 87 | 9,756 [^multi] |
 | LPA | CMsiRNAdb (full) | 556 | 6,431 [^multi] |
 | Luciferase_firefly | Martinelli 2023 / sirna-repro | 122 | 6,047 [^multi] |
 | Luciferase_renilla | Martinelli 2023 / sirna-repro | 43 | 1,969 |
@@ -248,8 +252,8 @@ tests/
 ```
 
 Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
-dataset, where it came from, and the bottom-line audit (7,162 trainable
-records across 100 genes, 6 sources — 16,763 records / 110 genes if the
+dataset, where it came from, and the bottom-line audit (7,505 trainable
+records across 103 genes, 7 sources — 17,106 records / 113 genes if the
 optional CMsiRNAdb full-database retrieval is also included). Primary
 source is **siRNAEfficacyDB** (Zhang et al. 2024, CC BY-NC); see the docs
 for the rest and their individual license terms before reusing this data
