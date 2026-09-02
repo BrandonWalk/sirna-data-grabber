@@ -25,6 +25,13 @@ SITES = {
     "shabalina": "AAACCCGGGUUU",
 }
 
+# Davis2025 rows need a 20nt target site (unlike the 12nt sites above) plus
+# its own 50nt local window (15nt flank + 20nt site + 15nt flank), since
+# that source ships its own window instead of a full-length transcript.
+DAVIS2025_SITE = ("ACGU" * 5)[:20]
+DAVIS2025_LEFT_FLANK = "GGGGGGGGGGGGGGG"  # 15nt
+DAVIS2025_RIGHT_FLANK = "UUUUUUUUUUUUUUU"  # 15nt
+
 # CMsiRNAdb rows need a full 19nt core (CMSIRNADB_CORE_LEN), unlike the
 # 12nt sites above.
 CMSIRNADB_PCSK9_SITE = ("ACGU" * 5)[:19]
@@ -192,6 +199,23 @@ def fake_data_dir(tmp_path: Path) -> Path:
         {"NM_000001.1": _transcript(CMSIRNADB_OTHER_SITE)},
     )
 
+    # Davis2025: ships its own 50nt local window per row instead of a
+    # full-length transcript (see _load_davis2025_records's docstring) --
+    # no davis2025_transcripts.fasta. Row 1 locates cleanly; row 2's window
+    # has a '?' consensus-ambiguity placeholder (exercises the
+    # has_flanking_context=False fallback path).
+    davis2025_site_2 = ("UGCA" * 5)[:20]
+    davis2025_window_2 = DAVIS2025_LEFT_FLANK + davis2025_site_2 + DAVIS2025_RIGHT_FLANK
+    davis2025_window_2 = "?" + davis2025_window_2[1:]  # inject one ambiguous base
+    (data_dir / "davis2025_extra.csv").write_text(
+        "Compound_Name,Gene,Accession_number,Sense_20mer,MRNA_50mer_Window,"
+        "Native_Avg_Pct_Untreated,Native_STDEV,Reporter_Avg_Pct_Untreated,Reporter_STDEV,Dataset\n"
+        f"GENEE_100_Blunt_2'-OMe/-F,GENEE,ACC5,{DAVIS2025_SITE},"
+        f"{DAVIS2025_LEFT_FLANK}{DAVIS2025_SITE}{DAVIS2025_RIGHT_FLANK},25.0,3.0,,,Original\n"
+        f"GENEE_200_Asymmetric_2'-OMe Rich,GENEE,ACC5,{davis2025_site_2},"
+        f"{davis2025_window_2},40.0,4.0,60.0,5.0,Walk\n"
+    )
+
     return data_dir
 
 
@@ -215,6 +239,9 @@ class FixtureConstants:
     cmsirnadb_pcsk9_site = CMSIRNADB_PCSK9_SITE
     cmsirnadb_other_site = CMSIRNADB_OTHER_SITE
     martinelli_site = MARTINELLI_SITE
+    davis2025_site = DAVIS2025_SITE
+    davis2025_left_flank = DAVIS2025_LEFT_FLANK
+    davis2025_right_flank = DAVIS2025_RIGHT_FLANK
     transcript = staticmethod(_transcript)
 
 
