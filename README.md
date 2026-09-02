@@ -13,7 +13,7 @@ command that re-fetches it from its original sources. Any project that wants
 this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
-**Currently: 17,106 siRNA records across 113 genes** (`load_records()`
+**Currently: 18,072 siRNA records across 113 genes** (`load_records()`
 default). Every source is individually toggleable via its own `include_*`
 flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
 per-source breakdown and audit.
@@ -26,19 +26,23 @@ per-source breakdown and audit.
 | [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 |
 | Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 |
 | Martinelli / sirna-repro | 2023 | 577 | 12 |
+| Davis, Monopoli et al. (NAR gkaf479) | 2025 | 966 | 4 |
 | Monopoli, Korkin & Khvorova | 2023 | 20 | 4 |
 | PDCD1 panel (Xu, Zhao et al. / siRNABERT) | 2024 | 8 | 1 |
 | OligoGraph repo (Sciabola 2013 + Harborth 2001) | 2013/2001 | 343 | 3 |
-| **Total** | | **17,106** | **113** |
+| **Total** | | **18,072** | **113** |
 
 "Published" is the year of the paper/database each source comes from, not
 when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
 for full citations, license terms, and how each source's data was verified.
 "Genes" is how many distinct genes/reporters that source contributes to this
 dataset; some genes (e.g. `APP`, `MAPT`) are covered by more than one
-source, so the per-source counts don't sum to the 105 total. CMsiRNAdb's
+source, so the per-source counts don't sum to the 113 total. CMsiRNAdb's
 count combines its PCSK9 subset and the other-12-genes addition (same
-underlying paper) -- see the gene-level table below for the split.
+underlying paper) -- see the gene-level table below for the split. Davis
+2025 and Monopoli 2023 are from the same lab and cover the same 4 genes
+(`APP`/`MAPT`/`BACE1`/`SNCA`) -- Davis 2025's 966 is already net of
+deduping against Monopoli 2023 and CMsiRNAdb (full) by exact sequence.
 
 ## Genes in this dataset
 
@@ -61,8 +65,8 @@ for genes with more than one distinct transcript accession across records
 | ALPG | Shabalina 2006 | 11 | 2,492 |
 | ANGPTL3 | CMsiRNAdb (full) | 551 | 2,926 [^multi] |
 | APOB | Martinelli 2023 / sirna-repro | 34 | 14,121 |
-| APP | CMsiRNAdb (full) + Monopoli 2023 | 960 | 3,358 [^multi] |
-| BACE1 | Monopoli 2023 | 3 | 5,835 |
+| APP | CMsiRNAdb (full) + Monopoli 2023 + Davis 2025 | 1,244 | 3,358 [^multi] |
+| BACE1 | Monopoli 2023 + Davis 2025 | 183 | 5,835 |
 | C6orf110 | siRNAEfficacyDB | 145 | 3,465 |
 | Cacnb1 | siRNAEfficacyDB | 46 | 3,393 |
 | CASR_rhesus | Martinelli 2023 / sirna-repro | 68 | 3,144 |
@@ -112,7 +116,7 @@ for genes with more than one distinct transcript accession across records
 | Luciferase_renilla | Martinelli 2023 / sirna-repro | 43 | 1,969 |
 | LYPD1 | Shabalina 2006 | 14 | 3,458 |
 | MAPK14 | Shabalina 2006 | 8 | 4,222 |
-| MAPT | CMsiRNAdb (full) + Monopoli 2023 | 635 | 6,816 [^multi] |
+| MAPT | CMsiRNAdb (full) + Monopoli 2023 + Davis 2025 | 917 | 6,816 [^multi] |
 | MARC1 | CMsiRNAdb (full) | 823 | 1,020 [^multi] |
 | MIR155HG | Martinelli 2023 / sirna-repro | 42 | 1,500 |
 | MMAC1 | siRNAEfficacyDB | 36 | 3,160 |
@@ -144,7 +148,7 @@ for genes with more than one distinct transcript accession across records
 | SEAP | siRNAEfficacyDB | 17 | 2,754 [^multi] |
 | SEPTIN2 | Shabalina 2006 | 5 | 3,251 |
 | SKP1 | Shabalina 2006 | 5 | 2,616 |
-| SNCA | Monopoli 2023 | 4 | 3,177 |
+| SNCA | Monopoli 2023 + Davis 2025 | 224 | 3,177 |
 | SOD2_chimp | Martinelli 2023 / sirna-repro | 51 | 600 |
 | SOST | siRNAEfficacyDB | 75 | 2,296 |
 | TC10 | siRNAEfficacyDB | 67 | 4,780 |
@@ -253,11 +257,11 @@ tests/
 
 Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
 dataset, where it came from, and the bottom-line audit (7,505 trainable
-records across 103 genes, 7 sources — 17,106 records / 113 genes if the
-optional CMsiRNAdb full-database retrieval is also included). Primary
-source is **siRNAEfficacyDB** (Zhang et al. 2024, CC BY-NC); see the docs
-for the rest and their individual license terms before reusing this data
-outside this project.
+records across 103 genes, 7 sources — 18,072 records / 113 genes if the
+optional CMsiRNAdb full-database retrieval and Davis2025 are also
+included). Primary source is **siRNAEfficacyDB** (Zhang et al. 2024, CC
+BY-NC); see the docs for the rest and their individual license terms
+before reusing this data outside this project.
 
 ## Install
 
@@ -326,8 +330,8 @@ r.label            # experimental %knockdown / %inhibition
 r.source           # provenance, e.g. "siRNAEfficacyDB"
 
 # Chemical modification (most records are standard/unmodified; a minority
-# -- currently CMsiRNAdb, Monopoli2023, and Martinelli_sirna_repro -- are
-# chemically modified):
+# -- currently CMsiRNAdb, Monopoli2023, Martinelli_sirna_repro, and
+# Davis2025 -- are chemically modified):
 r.is_modified              # bool
 r.modification_chemistry   # short summary, e.g. "2'-OMe/2'-F/PS-backbone (per-position, CMsiRNAdb)"
 r.sense_modifications       # per-position modified-nucleoside name or None; CMsiRNAdb only
@@ -340,9 +344,9 @@ transcript.accession, transcript.sequence
 
 `load_records()` takes `include_sirna_efficacy` / `include_monopoli` /
 `include_pdcd1` / `include_shabalina` / `include_martinelli` /
-`include_cmsirnadb` / `include_cmsirnadb_full` flags (all default `True`) to
-include or exclude any individual source, including the primary
-siRNAEfficacyDB set -- no source is loaded unconditionally.
+`include_cmsirnadb` / `include_cmsirnadb_full` / `include_davis2025` flags
+(all default `True`) to include or exclude any individual source, including
+the primary siRNAEfficacyDB set -- no source is loaded unconditionally.
 
 `data_dir` (a `Path` or `str`) points every source at a specific directory of
 fetched files, as a plain function argument -- no `SIRNA_DATA_DIR` export
