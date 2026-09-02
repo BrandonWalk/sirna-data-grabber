@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sirna-data-grabber"
-version = "0.6.0"
+version = "0.7.0"
 description = "Reusable loader for the siRNA knockdown-efficacy dataset (siRNAEfficacyDB + supplementary sources), plus the fetchers that built it."
 readme = "README.md"
 requires-python = ">=3.10"
