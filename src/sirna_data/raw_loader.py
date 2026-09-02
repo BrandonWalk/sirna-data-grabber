@@ -812,6 +812,147 @@ def _load_cmsirnadb_full_records(
     return records
 
 
+_DAVIS2025_GENE_ACCESSION = {
+    "APP": "NM_000484",
+    "MAPT": "NM_001123066",
+    "BACE1": "NM_012104",
+    "SNCA": "NM_000345",
+}
+
+
+def _davis2025_scaffold(compound_name: str) -> str | None:
+    parts = str(compound_name).split("_", 2)
+    return parts[2] if len(parts) == 3 else None
+
+
+def _load_davis2025_records(
+    flank_nt: int,
+    existing_sequences: frozenset[str] = frozenset(),
+    data_dir: Path | None = None,
+) -> list[SiRNARecord]:
+    """Davis et al. 2025 (Nucleic Acids Research 53(12):gkaf479, CC BY 4.0)
+    Supplemental Table S1 -- 1,011 fully chemically modified siRNAs against
+    APP, MAPT, BACE1 and SNCA (the SAME four genes Monopoli et al. 2023
+    covers, from the same lab -- see the dedup note below), each with a
+    native QuantiGene 2.0 knockdown readout. Filtered at extraction time
+    (see `data/raw/davis2025_extra.csv`) to the paper's own "Included in
+    Filtered Dataset" == "Yes" subset (1,011 of 1,248 raw rows): the
+    excluded 237 rows target sites the paper's own RNA-seq/3P-seq analysis
+    found not confidently expressed in the SH-SY5Y cells the assay was run
+    in. See data/DATA_SOURCES.md for how the full 1,248-row table was
+    obtained and for the license/provenance writeup.
+
+    Unlike every other loader in this file, this source ships its own local
+    mRNA context per row (a 50nt window -- the target's position, always at
+    a 15nt offset, in the "consensus sequence across mRNA variants expressed
+    in SH-SY5Y cells" the paper computed from RNA-seq + 3P-seq) rather than
+    a full-length transcript this loader slices with `_locate_window` --
+    there is no `davis2025_transcripts.fasta`, and `flank_nt` is accepted
+    only for interface consistency with every other loader and is otherwise
+    unused here. Verified at extraction time: the stored 20mer target site
+    is an exact substring of the stored 50mer window for all 1,248 raw
+    rows. A minority of windows (22 of 1,011 kept rows) have '?' placeholder
+    characters in the mRNA library's own consensus-calling in the flanking
+    region (never inside the 20mer target itself) -- ambiguous positions
+    across the mRNA variants the paper's consensus was built from, not
+    something introduced here. Those rows fall back to duplex-only context
+    (`has_flanking_context=False`) exactly like `_locate_window`'s own
+    not-found fallback, rather than shipping a window with '?' in it.
+
+    Label: `label = 100 - Native Assay Average (% Untreated Control)`, this
+    source's ever-present readout (present for all 1,248 raw rows; a
+    reporter/luciferase co-assay also exists in the raw table for a
+    536-row subset but isn't used here).
+
+    Sequence identity: `guide_seq` is derived by `_revcomp()` of the
+    verified 20mer sense/target site, the same convention every other
+    loader lacking an independently-trustworthy antisense column uses --
+    NOT read from the raw table's own "Antisense/Sense Strand Sequence and
+    Chemical Modification Scaffold" columns. Those columns *do* carry real
+    per-position 2'-OMe/2'-F chemistry annotation, parseable the same way
+    CMsiRNAdb's is, but cross-checking their embedded base calls against
+    the verified target site across all 1,248 raw rows found they are NOT
+    simple reverse complements of it or of each other under any
+    reversal/complement orientation tried (average ~10-15 mismatches out of
+    20 nt) -- whatever indexing/orientation convention produced those two
+    columns could not be confidently reconstructed here, so per-position
+    chemistry (`sense_modifications`/`antisense_modifications`) is left
+    unset rather than guessed at. `is_modified=True` and
+    `modification_chemistry` carry only the coarse scaffold-name tag parsed
+    from `Compound Name` (e.g. "Blunt_2'-OMe/-F"; only 3 distinct scaffolds
+    across the dataset). See data/DATA_SOURCES.md for the full writeup of
+    what was checked here.
+
+    Dedup: Monopoli2023 (20 siRNAs, same 4 genes, same lab) and
+    CMsiRNAdb_full (which also covers APP/MAPT) may well overlap this set
+    by sequence -- `load_records()` calls this loader last, with
+    `existing_sequences` computed after every other source (including
+    CMsiRNAdb_full) has loaded, so only genuinely new duplexes are added.
+    """
+    data_dir = data_dir or DATA_DIR
+    csv_path = data_dir / "davis2025_extra.csv"
+    if not csv_path.exists():
+        return []
+
+    df = pd.read_csv(csv_path)
+    records: list[SiRNARecord] = []
+    for i, row in df.iterrows():
+        sense = str(row["Sense_20mer"]).upper()
+        guide_seq = _revcomp(sense)
+        if guide_seq in existing_sequences or sense in existing_sequences:
+            continue
+
+        window = str(row["MRNA_50mer_Window"]).upper()
+        site_start = window.find(sense)
+        has_ambiguous_chars = bool(set(window) - set("ACGU"))
+        if site_start == -1 or has_ambiguous_chars:
+            mrna_window, window_site_start, has_flanking_context = sense, 0, False
+        else:
+            mrna_window, window_site_start, has_flanking_context = window, site_start, True
+
+        scaffold = _davis2025_scaffold(row["Compound_Name"])
+        records.append(
+            SiRNARecord(
+                row_id=f"davis2025_row{i}",
+                gene=row["Gene"],
+                accession=row["Accession_number"],
+                guide_seq=guide_seq,
+                duplex_len=len(guide_seq),  # overhang length not separately modeled
+                mrna_window=mrna_window,
+                site_start=window_site_start,
+                site_len=len(sense),
+                has_flanking_context=has_flanking_context,
+                label=100.0 - float(row["Native_Avg_Pct_Untreated"]),
+                technology=(
+                    "QuantiGene 2.0 native knockdown assay (fully chemically "
+                    "modified siRNA; Davis et al. 2025)"
+                ),
+                source="Davis2025",
+                is_modified=True,
+                modification_chemistry=(
+                    f"{scaffold} (dataset-level scaffold tag; per-position "
+                    "chemistry not resolved from raw notation -- see "
+                    "data/DATA_SOURCES.md)"
+                    if scaffold
+                    else None
+                ),
+            )
+        )
+    return records
+
+
+def _sequence_index(records: list[SiRNARecord]) -> frozenset[str]:
+    """Strand-agnostic sequence index of already-loaded records, for the
+    dedup-against-what's-already-here pattern used by the later, larger
+    additions to this dataset (CMsiRNAdb_full, Davis2025)."""
+    index: set[str] = set()
+    for r in records:
+        core = r.guide_seq[: r.duplex_len]
+        index.add(core)
+        index.add(_revcomp(core))
+    return frozenset(index)
+
+
 def load_records(
     csv_path: Path | None = None,
     fasta_path: Path | None = None,
@@ -824,7 +965,8 @@ def load_records(
     include_martinelli: bool = True,
     include_oligograph: bool = True,
     include_cmsirnadb: bool = True,
-    include_cmsirnadb_full: bool = True ) -> list[SiRNARecord]:
+    include_cmsirnadb_full: bool = True,
+    include_davis2025: bool = True ) -> list[SiRNARecord]:
     """Load the full merged siRNA-efficacy dataset as a list of SiRNARecord.
 
     Each record pairs an siRNA guide sequence with the local mRNA window
@@ -873,14 +1015,11 @@ def load_records(
         # Strand-agnostic sequence index of everything loaded so far, so the
         # 12-gene CMsiRNAdb addition only contributes genuinely new
         # sequences (see _load_cmsirnadb_full_records's docstring).
-        existing_sequences: set[str] = set()
-        for r in records:
-            core = r.guide_seq[: r.duplex_len]
-            existing_sequences.add(core)
-            existing_sequences.add(_revcomp(core))
-        records += _load_cmsirnadb_full_records(
-            flank_nt, frozenset(existing_sequences), resolved_dir
-        )
+        records += _load_cmsirnadb_full_records(flank_nt, _sequence_index(records), resolved_dir)
+    if include_davis2025:
+        # Recomputed (not reused) so it also covers CMsiRNAdb_full's own
+        # additions -- Davis2025 targets APP/MAPT, both also present there.
+        records += _load_davis2025_records(flank_nt, _sequence_index(records), resolved_dir)
     return records
 
 

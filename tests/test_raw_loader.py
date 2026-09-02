@@ -13,6 +13,7 @@ from sirna_data.raw_loader import (
     _dna_to_rna,
     _load_cmsirnadb_full_records,
     _load_cmsirnadb_records,
+    _load_davis2025_records,
     _load_martinelli_records,
     _load_monopoli_records,
     _load_pdcd1_records,
@@ -180,6 +181,58 @@ def test_load_shabalina_records(patch_data_dir: Path):
     assert r.gene == "GENED"
     assert r.source == "Shabalina2006"
     assert r.label == pytest.approx(100.0 - 40.0)
+
+
+def test_load_davis2025_records(patch_data_dir: Path, fixture_constants):
+    records = _load_davis2025_records(FLANK)
+    assert len(records) == 2
+    by_id = {r.row_id: r for r in records}
+
+    # Row 1: clean 50nt window, locates cleanly.
+    r1 = by_id["davis2025_row0"]
+    assert r1.gene == "GENEE"
+    assert r1.accession == "ACC5"
+    assert r1.source == "Davis2025"
+    assert r1.label == pytest.approx(100.0 - 25.0)
+    assert r1.guide_seq == _revcomp(fixture_constants.davis2025_site)
+    assert r1.has_flanking_context is True
+    assert r1.site_start == len(fixture_constants.davis2025_left_flank)
+    assert r1.mrna_window == (
+        fixture_constants.davis2025_left_flank
+        + fixture_constants.davis2025_site
+        + fixture_constants.davis2025_right_flank
+    )
+    assert r1.is_modified is True
+    assert r1.modification_chemistry == (
+        "Blunt_2'-OMe/-F (dataset-level scaffold tag; per-position "
+        "chemistry not resolved from raw notation -- see data/DATA_SOURCES.md)"
+    )
+    assert r1.sense_modifications is None
+    assert r1.antisense_modifications is None
+
+    # Row 2: window has a '?' consensus-ambiguity placeholder -> falls back
+    # to duplex-only context instead of shipping an ambiguous window (see
+    # test_load_davis2025_records_falls_back_on_ambiguous_window for the
+    # dedicated assertions on that path).
+    r2 = by_id["davis2025_row1"]
+    assert r2.label == pytest.approx(100.0 - 40.0)
+    assert r2.has_flanking_context is False
+    assert r2.site_start == 0
+
+
+def test_load_davis2025_records_falls_back_on_ambiguous_window(patch_data_dir: Path):
+    records = _load_davis2025_records(FLANK)
+    r2 = [r for r in records if r.row_id == "davis2025_row1"][0]
+    assert r2.has_flanking_context is False
+    assert r2.site_start == 0
+    assert "?" not in r2.mrna_window
+
+
+def test_load_davis2025_records_dedup_against_existing(patch_data_dir: Path, fixture_constants):
+    existing = frozenset({fixture_constants.davis2025_site})
+    records = _load_davis2025_records(FLANK, existing_sequences=existing)
+    assert len(records) == 1
+    assert records[0].row_id == "davis2025_row1"
 
 
 def test_load_martinelli_records(patch_data_dir: Path, fixture_constants):
@@ -377,6 +430,7 @@ def test_load_cmsirnadb_full_records_dedup_against_existing(
         _load_shabalina_records,
         _load_cmsirnadb_records,
         _load_cmsirnadb_full_records,
+        _load_davis2025_records,
     ],
 )
 def test_supplementary_loaders_return_empty_when_files_missing(
@@ -401,8 +455,8 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         flank_nt=FLANK,
     )
     # 2 primary + 1 each of monopoli/pdcd1/shabalina/cmsirnadb/cmsirnadb_full
-    # + 2 martinelli
-    assert len(records) == 9
+    # + 2 martinelli + 2 davis2025
+    assert len(records) == 11
     sources = {r.source for r in records}
     assert sources == {
         "siRNAEfficacyDB",
@@ -412,6 +466,7 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         "Martinelli_sirna_repro",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
+        "Davis2025",
     }
 
 
@@ -426,6 +481,7 @@ def test_load_records_respects_include_flags(patch_data_dir: Path, fake_data_dir
         include_martinelli=False,
         include_cmsirnadb=False,
         include_cmsirnadb_full=False,
+        include_davis2025=False,
     )
     # only the 2 primary rows
     assert len(records) == 2
@@ -443,8 +499,9 @@ def test_load_records_can_exclude_primary_source(patch_data_dir: Path, fake_data
     )
     assert "siRNAEfficacyDB" not in {r.source for r in records}
     # the other supplementary sources still load by default (1 each of
-    # monopoli/pdcd1/shabalina/cmsirnadb/cmsirnadb_full + 2 martinelli)
-    assert len(records) == 7
+    # monopoli/pdcd1/shabalina/cmsirnadb/cmsirnadb_full + 2 martinelli
+    # + 2 davis2025)
+    assert len(records) == 9
 
 
 def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake_data_dir: Path):
@@ -459,6 +516,7 @@ def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake
         include_martinelli=False,
         include_cmsirnadb=False,
         include_cmsirnadb_full=False,
+        include_davis2025=False,
     )
     assert records == []
 
@@ -467,7 +525,7 @@ def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
     # csv_path/fasta_path omitted -> should fall back to DATA_DIR/<default filenames>,
     # which patch_data_dir has already pointed at the fixture directory.
     records = load_records(flank_nt=FLANK)
-    assert len(records) == 9
+    assert len(records) == 11
 
 
 def test_load_records_data_dir_arg_without_env_var(
@@ -476,7 +534,7 @@ def test_load_records_data_dir_arg_without_env_var(
     # pass the directory straight to load_records().
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=fake_data_dir)
-    assert len(records) == 9
+    assert len(records) == 11
     assert {r.source for r in records} == {
         "siRNAEfficacyDB",
         "Monopoli2023",
@@ -485,13 +543,14 @@ def test_load_records_data_dir_arg_without_env_var(
         "Martinelli_sirna_repro",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
+        "Davis2025",
     }
 
 
 def test_load_records_data_dir_accepts_str(fake_data_dir: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=str(fake_data_dir))
-    assert len(records) == 9
+    assert len(records) == 11
 
 
 # --------------------------------------------------------------------------

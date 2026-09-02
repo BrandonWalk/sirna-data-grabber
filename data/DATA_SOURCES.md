@@ -9,10 +9,11 @@ landscape of sources considered — including ones never obtained or not pursued
 further — see `POTENTIAL_DATA_SOURCES.md`.
 
 - **Trainable records currently integrated: 7,505** across **103 genes**, all with a
-  numeric %-knockdown label. (17,106 records / 113 genes if the CMsiRNAdb full-database
-  retrieval below is also included — on by default via `include_cmsirnadb_full=True`.)
-- **7 sources** supply that data; **siRNAEfficacyDB (3,532)** and the **CMsiRNAdb PCSK9
-  subset (2,756)** are 84% of it.
+  numeric %-knockdown label. (18,072 records / 113 genes if the CMsiRNAdb full-database
+  retrieval and Davis2025 below are also included — both on by default via
+  `include_cmsirnadb_full=True` / `include_davis2025=True`; see their own sections.)
+- **7 sources** supply that headline 7,505; **siRNAEfficacyDB (3,532)** and the
+  **CMsiRNAdb PCSK9 subset (2,756)** are 84% of it.
 - **siRecords** was recovered (3,117 rated records, ~1,400 new gene accessions) but is
   **NOT trainable as-is** — its label is a 4-level ordinal rating, not a numeric
   percentage. See "Considered, not integrated: siRecords" below.
@@ -117,6 +118,83 @@ products, so its prepared data files are not safe to vendor into this project.
   requiring pipeline support we haven't built. Left for a future iteration
   if more training signal (as opposed to more evaluable genes) becomes the
   priority.
+
+## Supplementary siRNA data: Davis et al. 2025 (966 net-new rows after dedup, 0 new genes)
+
+- Davis, Hildebrand, MacMillan, Monopoli, ... Pai & Khvorova 2025, *Nucleic Acids
+  Research* 53(12):gkaf479, "Systematic analysis of siRNA and mRNA features
+  impacting fully chemically modified siRNA efficacy"
+  (doi:10.1093/nar/gkaf479, PMC12205987). **CC BY 4.0** — the same lab as
+  Monopoli 2023 (Kathryn R Monopoli is a co-author here too), and the same
+  four genes (`APP`, `MAPT`, `BACE1`, `SNCA`).
+- Supplemental Table S1: 1,248 raw rows, each a fully chemically modified
+  siRNA (2'-OMe/2'-F, one of 3 scaffold architectures: "Blunt", "Asymmetric
+  2'-OMe/-F", "Asymmetric 2'-OMe Rich") measured by both a native QuantiGene
+  2.0 assay (always present) and a dual-glo luciferase reporter assay
+  (present for 536 rows, not currently used here). Filtered to the paper's
+  own "Included in Filtered Dataset" == "Yes" subset (1,011 rows) before
+  loading — the excluded 237 target sites weren't confidently expressed in
+  the tested SH-SY5Y cells per the paper's own RNA-seq/3P-seq analysis.
+  `data/raw/davis2025_extra.csv` ships this 1,011-row filtered/derived CSV
+  directly (CC BY 4.0 permits redistributing a derivative, unlike
+  CMsiRNAdb's CC BY-NC-ND).
+- **Obtaining this file was not straightforward to automate**: Oxford
+  Academic's supplementary-files CDN link for this article sits behind a
+  Cloudflare Turnstile ("Verify you are human") challenge — a real,
+  interactive bot-check, not a `robots.txt`/ToS restriction like the
+  ThermoFisher case under Monopoli 2023 above, so no automated fetch was
+  attempted (this tooling won't solve CAPTCHAs). The user downloaded
+  `gkaf479_supplemental_files.zip` manually from their own browser
+  session and supplied `Supplemental Tables.xlsx` from it; `davis2025_extra.csv`
+  was derived from that file's "Supplemental Table 1" sheet. Because
+  acquisition required a human in the loop, there is no
+  `sirna_data/fetch/davis2025.py` — same pattern as `pdcd1_extra.csv`/
+  `martinelli_extra.csv`/`oligograph_extra.csv`, which also have no
+  corresponding fetcher (see `src/sirna_data/fetch/__init__.py`).
+- **No transcript FASTA for this source**: unlike every other loader, this
+  source ships its own local 50nt mRNA window per row directly in the raw
+  table (the target's "consensus sequence across mRNA variants expressed in
+  SH-SY5Y cells", computed by the paper's own authors from RNA-seq + 3P-seq)
+  — so `_load_davis2025_records` uses that window as-is instead of calling
+  `_locate_window` against a fetched full-length transcript. Verified: the
+  stored 20mer target site is an exact substring of the stored 50mer window,
+  at a constant 15nt offset, for all 1,248 raw rows. 22 of the 1,011 kept
+  rows have `?` placeholder characters in the window's flanking region (the
+  source's own consensus-calling marking an ambiguous position across mRNA
+  variants — never inside the 20mer target itself); those rows fall back to
+  duplex-only context (`has_flanking_context=False`) rather than shipping a
+  window with `?` in it.
+- Label conversion: same convention as Monopoli/Shabalina —
+  `label = 100 - Native Assay Average (% Untreated Control)`.
+- **Sequence-identity caveat (read before trusting per-position chemistry
+  from this source)**: the raw table's "Antisense/Sense Strand Sequence and
+  Chemical Modification Scaffold" columns embed real per-position 2'-OMe/
+  2'-F chemistry annotation, in principle parseable the same way
+  CMsiRNAdb's `Modification_Types_*_strand` columns are. But cross-checking
+  every one of the 1,248 rows found these two columns' embedded base calls
+  are **not** simple reverse complements of the verified 20mer target site,
+  or of each other, under any of the 16 reversal/complement orientations
+  tried (average ~10-15 mismatches out of 20nt in every case — close to
+  what unrelated random sequences would give). Whatever indexing or
+  strand-orientation convention actually produced those two columns could
+  not be confidently reconstructed here. Rather than guess, `guide_seq` is
+  derived the same way every other source lacking an independently
+  trustworthy antisense column handles it: `_revcomp()` of the verified
+  target site. `is_modified=True` and `modification_chemistry` carry only
+  the coarse scaffold-name tag parsed from `Compound Name` (dataset-level,
+  not per-position — `sense_modifications`/`antisense_modifications` stay
+  unset). A future revision that resolves the raw notation's real
+  orientation (e.g. by reading the paper's Methods/figure legends more
+  closely) could upgrade this to real per-position data.
+- **Dedup**: Monopoli 2023 (same 4 genes, same lab) and CMsiRNAdb's full
+  retrieval (which also covers APP/MAPT) plausibly overlap this set by
+  sequence. `load_records()` loads this source last, deduping against every
+  other source's sequences (strand-agnostic) — of 1,011 filtered rows, 966
+  survive as genuinely new duplexes (45 dropped as exact-sequence repeats of
+  something already loaded). All 4 genes were already covered by Monopoli/
+  CMsiRNAdb_full, so this source adds 0 new genes — its value is depth
+  (966 more measurements) on 4 genes this dataset already had only sparse
+  coverage of, not breadth.
 
 ## Supplementary siRNA data: PDCD1 panel (Xu, Zhao et al. 2024 / siRNABERT)
 

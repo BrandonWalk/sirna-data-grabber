@@ -24,6 +24,7 @@ per source.
 | Shabalina et al. 2006 | `shabalina_extra.csv` | CC BY 2.0 | Yes, with attribution |
 | OligoGraph repo (Sciabola et al. 2013 + Harborth et al. 2001) | `oligograph_extra.csv` | **Unresolved — no LICENSE file in the source repo.** | Unclear — do not assume |
 | CMsiRNAdb (He et al. 2026) | `cmsirnadb_full_raw.tsv` | CC BY-NC-ND 4.0 | **No** — non-commercial only, and the "ND" term means only the original unmodified file may be redistributed (see below) |
+| Davis et al. 2025 (NAR gkaf479) | `davis2025_extra.csv` | CC BY 4.0 | Yes, with attribution |
 | NCBI RefSeq/GenBank transcripts | `*_transcripts.fasta` | Public domain | Yes, unrestricted |
 
 **PDCD1 panel's unresolved license**: recovered from a deleted file in
