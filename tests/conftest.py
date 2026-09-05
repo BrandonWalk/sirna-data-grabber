@@ -116,7 +116,7 @@ def fake_data_dir(tmp_path: Path) -> Path:
         data_dir / "shabalina_transcripts.fasta", {"ACC4": _transcript(SITES["shabalina"])}
     )
 
-    # Martinelli/sirna-repro: both strands given directly (not derived by
+    # Martinelli/sirna-reproduction: both strands given directly (not derived by
     # revcomp), each with its own 2nt 3' overhang appended past the 19nt
     # core that's expected to match the transcript. Row 1 exercises the
     # modified path (sense modified, antisense the "0" = unmodified

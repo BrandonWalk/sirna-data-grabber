@@ -25,7 +25,7 @@ per-source breakdown and audit.
 | [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,532 | 41 |
 | [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 |
 | Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 |
-| Martinelli / sirna-repro | 2023 | 577 | 12 |
+| Martinelli / sirna-reproduction | 2023 | 577 | 12 |
 | Davis, Monopoli et al. (NAR gkaf479) | 2025 | 966 | 4 |
 | Monopoli, Korkin & Khvorova | 2023 | 20 | 4 |
 | PDCD1 panel (Xu, Zhao et al. / siRNABERT) | 2024 | 8 | 1 |
@@ -58,29 +58,29 @@ for genes with more than one distinct transcript accession across records
 
 | Gene | Source dataset | siRNAs | Transcript length (nt) |
 |---|---|---|---|
-| ACP5 | Martinelli 2023 / sirna-repro | 32 | 1,683 |
+| ACP5 | Martinelli 2023 / sirna-reproduction | 32 | 1,683 |
 | AGT | CMsiRNAdb (full) | 872 | 2,148 [^multi] |
 | AKT1 | Shabalina 2006 | 5 | 3,008 |
 | AKT2 | Shabalina 2006 | 4 | 5,250 |
 | ALPG | Shabalina 2006 | 11 | 2,492 |
 | ANGPTL3 | CMsiRNAdb (full) | 551 | 2,926 [^multi] |
-| APOB | Martinelli 2023 / sirna-repro | 34 | 14,121 |
+| APOB | Martinelli 2023 / sirna-reproduction | 34 | 14,121 |
 | APP | CMsiRNAdb (full) + Monopoli 2023 + Davis 2025 | 1,244 | 3,358 [^multi] |
 | BACE1 | Monopoli 2023 + Davis 2025 | 183 | 5,835 |
 | C6orf110 | siRNAEfficacyDB | 145 | 3,465 |
 | Cacnb1 | siRNAEfficacyDB | 46 | 3,393 |
-| CASR_rhesus | Martinelli 2023 / sirna-repro | 68 | 3,144 |
+| CASR_rhesus | Martinelli 2023 / sirna-reproduction | 68 | 3,144 |
 | CBL | Shabalina 2006 | 5 | 11,168 |
 | CBLB | Shabalina 2006 | 5 | 3,354 |
 | CDC34 | siRNAEfficacyDB | 57 | 1,418 |
 | CDKN1A | Shabalina 2006 | 5 | 2,117 |
-| CDKN1B | Martinelli 2023 / sirna-repro | 60 | 2,410 |
+| CDKN1B | Martinelli 2023 / sirna-reproduction | 60 | 2,410 |
 | CSK | Shabalina 2006 | 5 | 2,743 |
 | CTNNB1 | CMsiRNAdb (full) | 352 | 3,488 |
 | Cyclophilin B | siRNAEfficacyDB | 90 | 851 |
 | DAD1 | Shabalina 2006 | 5 | 684 |
 | DBI | siRNAEfficacyDB | 9 | 675 |
-| EGFP | Martinelli 2023 / sirna-repro | 74 | 1,470 |
+| EGFP | Martinelli 2023 / sirna-reproduction | 74 | 1,470 |
 | EGFP[^egfp2] | siRNAEfficacyDB | 702 | N/A [^egfp] |
 | EIF4EBP1 | Shabalina 2006 | 4 | 827 |
 | F3_human | Shabalina 2006 | 14 | 2,104 |
@@ -109,23 +109,23 @@ for genes with more than one distinct transcript accession across records
 | INHBE | CMsiRNAdb (full) | 670 | 2,460 [^multi] |
 | IRS1 | Shabalina 2006 | 5 | 9,771 |
 | ITGB1 | Shabalina 2006 | 5 | 3,735 |
-| KAZRIN | Martinelli 2023 / sirna-repro | 39 | 2,641 |
+| KAZRIN | Martinelli 2023 / sirna-reproduction | 39 | 2,641 |
 | Lamin A | siRNAEfficacyDB + OligoGraph repo (Harborth 2001) | 87 | 9,756 [^multi] |
 | LPA | CMsiRNAdb (full) | 556 | 6,431 [^multi] |
-| Luciferase_firefly | Martinelli 2023 / sirna-repro | 122 | 6,047 [^multi] |
-| Luciferase_renilla | Martinelli 2023 / sirna-repro | 43 | 1,969 |
+| Luciferase_firefly | Martinelli 2023 / sirna-reproduction | 122 | 6,047 [^multi] |
+| Luciferase_renilla | Martinelli 2023 / sirna-reproduction | 43 | 1,969 |
 | LYPD1 | Shabalina 2006 | 14 | 3,458 |
 | MAPK14 | Shabalina 2006 | 8 | 4,222 |
 | MAPT | CMsiRNAdb (full) + Monopoli 2023 + Davis 2025 | 917 | 6,816 [^multi] |
 | MARC1 | CMsiRNAdb (full) | 823 | 1,020 [^multi] |
-| MIR155HG | Martinelli 2023 / sirna-repro | 42 | 1,500 |
+| MIR155HG | Martinelli 2023 / sirna-reproduction | 42 | 1,500 |
 | MMAC1 | siRNAEfficacyDB | 36 | 3,160 |
 | Mmp7 | siRNAEfficacyDB | 150 | 1,043 |
 | MSTN | CMsiRNAdb (full) | 9 | 2,705 [^multi] |
 | MYC | Shabalina 2006 | 5 | 3,721 |
 | MyoD | Shabalina 2006 | 5 | 1,833 |
 | NOG | siRNAEfficacyDB | 71 | 1,913 |
-| NPY | Martinelli 2023 / sirna-repro | 8 | 567 |
+| NPY | Martinelli 2023 / sirna-reproduction | 8 | 567 |
 | P2rx2 | siRNAEfficacyDB | 77 | 1,833 |
 | P2RX3 | siRNAEfficacyDB | 90 | 3,792 |
 | PAC | Shabalina 2006 | 10 | 906 |
@@ -149,7 +149,7 @@ for genes with more than one distinct transcript accession across records
 | SEPTIN2 | Shabalina 2006 | 5 | 3,251 |
 | SKP1 | Shabalina 2006 | 5 | 2,616 |
 | SNCA | Monopoli 2023 + Davis 2025 | 224 | 3,177 |
-| SOD2_chimp | Martinelli 2023 / sirna-repro | 51 | 600 |
+| SOD2_chimp | Martinelli 2023 / sirna-reproduction | 51 | 600 |
 | SOST | siRNAEfficacyDB | 75 | 2,296 |
 | TC10 | siRNAEfficacyDB | 67 | 4,780 |
 | TCAP | siRNAEfficacyDB | 144 | 1,532 |
@@ -170,7 +170,7 @@ for genes with more than one distinct transcript accession across records
 | UBE2S | siRNAEfficacyDB | 79 | 2,559 |
 | UBE2V1 | siRNAEfficacyDB | 74 | 2,539 |
 | Ufc1 | siRNAEfficacyDB | 70 | 888 |
-| VEGFA | Martinelli 2023 / sirna-repro | 4 | 3,660 |
+| VEGFA | Martinelli 2023 / sirna-reproduction | 4 | 3,660 |
 
 </details>
 
@@ -330,7 +330,7 @@ r.label            # experimental %knockdown / %inhibition
 r.source           # provenance, e.g. "siRNAEfficacyDB"
 
 # Chemical modification (most records are standard/unmodified; a minority
-# -- currently CMsiRNAdb, Monopoli2023, Martinelli_sirna_repro, and
+# -- currently CMsiRNAdb, Monopoli2023, Martinelli_sirna_reproduction, and
 # Davis2025 -- are chemically modified):
 r.is_modified              # bool
 r.modification_chemistry   # short summary, e.g. "2'-OMe/2'-F/PS-backbone (per-position, CMsiRNAdb)"

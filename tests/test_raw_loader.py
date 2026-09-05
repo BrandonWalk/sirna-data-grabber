@@ -245,7 +245,7 @@ def test_load_martinelli_records(patch_data_dir: Path, fixture_constants):
     r1 = by_id["martinelli_SM1"]
     assert r1.gene == "MARTGENE"
     assert r1.accession == "MARTACC"
-    assert r1.source == "Martinelli_sirna_repro"
+    assert r1.source == "Martinelli_sirna_reproduction"
     assert r1.label == pytest.approx(75.0)
     assert r1.has_flanking_context is True
     # both strands taken directly from the source, not revcomp-derived.
@@ -253,7 +253,9 @@ def test_load_martinelli_records(patch_data_dir: Path, fixture_constants):
     assert r1.duplex_len == 19
     assert r1.site_len == 19  # 3' overhang excluded from the matched core
     assert r1.is_modified is True
-    assert r1.modification_chemistry == "locked nucleic acid (per-molecule, Martinelli/sirna-repro)"
+    assert r1.modification_chemistry == (
+        "locked nucleic acid (per-molecule, Martinelli/sirna-reproduction)"
+    )
     # per-molecule, not per-position, annotation -- these stay unset.
     assert r1.sense_modifications is None
     assert r1.antisense_modifications is None
@@ -463,7 +465,7 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         "Monopoli2023",
         "siRNABERT_PDCD1",
         "Shabalina2006",
-        "Martinelli_sirna_repro",
+        "Martinelli_sirna_reproduction",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
         "Davis2025",
@@ -540,7 +542,7 @@ def test_load_records_data_dir_arg_without_env_var(
         "Monopoli2023",
         "siRNABERT_PDCD1",
         "Shabalina2006",
-        "Martinelli_sirna_repro",
+        "Martinelli_sirna_reproduction",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
         "Davis2025",

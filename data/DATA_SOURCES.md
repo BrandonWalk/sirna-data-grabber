@@ -30,7 +30,7 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
 | **Shabalina 2006** | **269** | +41 | numeric (100−Activity) | 269 new after dedup vs 653 in paper; `shabalina_extra.csv`. |
 | **Monopoli 2023** | **20** | +4 (APP/MAPT/BACE1/SNCA) | numeric (100−reporter) | Modified sdRNA; `monopoli_extra.csv`. |
 | **PDCD1 panel (Xu/Zhao 2024, siRNABERT)** | **8** | +1 (PDCD1) | numeric (qPCR knockdown %) | Recovered from deleted file in repo's git history, verified against NM_005018.3; license unresolved but `pdcd1_extra.csv` is committed at the user's explicit request — see `NOTICE.md`. |
-| **Martinelli 2023 / sirna-repro** | **577** | +12 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA, KAZRIN, MIR155HG, CDKN1B, SOD2_chimp, CASR_rhesus) | numeric (PCT) | 577 of 907 rows resolved — 253 by source-document tracing, 324 more by brute-force sequence matching. See the section below. |
+| **Martinelli 2023 / sirna-reproduction** | **577** | +12 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA, KAZRIN, MIR155HG, CDKN1B, SOD2_chimp, CASR_rhesus) | numeric (PCT) | 577 of 907 rows resolved — 253 by source-document tracing, 324 more by brute-force sequence matching. See the section below. |
 | **OligoGraph repo (Sciabola 2013 + Harborth 2001)** | **343** | +3 (HIF1A, HK2, HPSE; the 43 Harborth-traced rows merge into the existing Lamin A group) | `label * 100`, **interpreted as %KD** (not independently verified — see the section below) | Gene identity independently verified by exact 19nt match; the metric is a stated interpretation of an undocumented normalized value, not a confirmed true value. |
 | **TOTAL** | **7,505** | **103 genes** | — | — |
 
@@ -303,12 +303,12 @@ products, so its prepared data files are not safe to vendor into this project.
 - Fetched by `sirna_data.fetch.shabalina` (`sirna-data-fetch`) into
   `data/raw/shabalina_extra.csv` and `data/raw/shabalina_transcripts.fasta`.
 
-## Supplementary siRNA data: Martinelli 2023 / sirna-repro (577 of 907 rows, 12 new genes/reporters)
+## Supplementary siRNA data: Martinelli 2023 / sirna-reproduction (577 of 907 rows, 12 new genes/reporters)
 
-- Martinelli 2023, bioRxiv preprint / `sirna-repro` (siRNAmod-derived
+- Martinelli 2023, bioRxiv preprint / `sirna-reproduction` (siRNAmod-derived
   reproduction dataset). 907 chemically-modified siRNAs pooled from 30
   source PMIDs/patents, kept locally (gitignored, not redistributed) at
-  `data/raw/sirna_repro_martinelli_907.csv` — see `NOTICE.md`.
+  `data/raw/sirna_reproduction_martinelli_907.csv` — see `NOTICE.md`.
 - **The blocker and how it was resolved**: as originally obtained, this
   table has no gene-identity column at all — only sequence, a per-molecule
   modification descriptor, `PCT` (%inhibition, already in this dataset's
@@ -460,7 +460,7 @@ products, so its prepared data files are not safe to vendor into this project.
   gene/accession columns, and corrected sense sequences for the 28 pass-1
   rows noted above) and `data/raw/martinelli_transcripts.fasta` (the 13
   reference sequences above, 7 from pass 1 plus 6 from pass 2). **License**:
-  the source `sirna-repro` dataset is CC BY-NC 4.0, which — unlike
+  the source `sirna-reproduction` dataset is CC BY-NC 4.0, which — unlike
   CMsiRNAdb's CC BY-NC-ND — permits derivatives, so this filtered/
   gene-annotated subset is committed to the repo like Monopoli/Shabalina,
   not gitignored like PDCD1/siRecords.
@@ -860,7 +860,7 @@ what was actually assayed.
   `POTENTIAL_DATA_SOURCES.md`) -- same chemistry class as Monopoli
   (Monopoli's model was trained on it), but blocked from integration by
   its own no-gene-identity problem, unrelated to modification data.
-- **Martinelli 2023 / sirna-repro** (577 of 907 rows integrated -- see the
+- **Martinelli 2023 / sirna-reproduction** (577 of 907 rows integrated -- see the
   dedicated section above) -- a genuine per-siRNA (not per-position)
   modification-type column (e.g. "hexitol nucleic acid", "2-fluoro
   2-O-methyl", or "0" for unmodified); every one of the 577 gene-resolved

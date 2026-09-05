@@ -311,7 +311,7 @@ def _load_shabalina_records(flank_nt: int, data_dir: Path | None = None) -> list
 
 
 def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
-    """Martinelli et al. / sirna-repro (bioRxiv, siRNAmod-derived): a 907-row
+    """Martinelli et al. / sirna-reproduction (bioRxiv, siRNAmod-derived): a 907-row
     chemically-modified siRNA corpus that ships with NO gene-identity column
     at all (only sequence, per-molecule modification descriptor, PCT, and a
     source PMID/patent ID) -- unusable as-is for leave-one-gene-out
@@ -362,7 +362,7 @@ def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> lis
         mods = sorted({m for m in (sense_mod, antisense_mod) if m and m != "0"})
         is_modified = len(mods) > 0
         chemistry = (
-            " / ".join(mods) + " (per-molecule, Martinelli/sirna-repro)"
+            " / ".join(mods) + " (per-molecule, Martinelli/sirna-reproduction)"
             if is_modified
             else None
         )
@@ -381,9 +381,9 @@ def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> lis
                 label=float(row["PCT"]),
                 technology=(
                     "Reporter/qPCR knockdown assay (chemically modified siRNA; "
-                    "Martinelli et al./sirna-repro)"
+                    "Martinelli et al./sirna-reproduction)"
                 ),
-                source="Martinelli_sirna_repro",
+                source="Martinelli_sirna_reproduction",
                 is_modified=is_modified,
                 modification_chemistry=chemistry,
             )
