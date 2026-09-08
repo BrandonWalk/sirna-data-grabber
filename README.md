@@ -20,17 +20,17 @@ per-source breakdown and audit.
 
 ## Data sources at a glance
 
-| Source | Published | siRNAs | Genes |
-|---|---|---|---|
-| [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,532 | 41 |
-| [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 |
-| Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 |
-| Martinelli / sirna-reproduction | 2023 | 577 | 12 |
-| Davis, Monopoli et al. (NAR gkaf479) | 2025 | 966 | 4 |
-| Monopoli, Korkin & Khvorova | 2023 | 20 | 4 |
-| REMOVED panel (Xu, Zhao et al. / REMOVED) | 2024 | 8 | 1 |
-| REMOVED repo (Sciabola 2013 + Harborth 2001) | 2013/2001 | 343 | 3 |
-| **Total** | | **18,072** | **113** |
+| Source | Published | siRNAs | Genes | License |
+|---|---|---|---|---|
+| [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,532 | 41 | CC BY-NC |
+| [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 | CC BY-NC-ND 4.0 |
+| Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 | CC BY 2.0 |
+| Martinelli / sirna-reproduction | 2023 | 577 | 12 | CC BY-NC 4.0 |
+| Davis, Monopoli et al. (NAR gkaf479) | 2025 | 966 | 4 | CC BY 4.0 |
+| Monopoli, Korkin & Khvorova | 2023 | 20 | 4 | CC BY 4.0 |
+| REMOVED panel (Xu, Zhao et al. / REMOVED) | 2024 | 8 | 1 | none stated -- unresolved[^lic] |
+| REMOVED repo (Sciabola 2013 + Harborth 2001) | 2013/2001 | 343 | 3 | none stated -- unresolved[^lic] |
+| **Total** | | **18,072** | **113** | |
 
 "Published" is the year of the paper/database each source comes from, not
 when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
@@ -43,6 +43,13 @@ underlying paper) -- see the gene-level table below for the split. Davis
 2025 and Monopoli 2023 are from the same lab and cover the same 4 genes
 (`APP`/`MAPT`/`BACE1`/`SNCA`) -- Davis 2025's 966 is already net of
 deduping against Monopoli 2023 and CMsiRNAdb (full) by exact sequence.
+
+[^lic]: These two repos ship no `LICENSE` file, so they are
+    all-rights-reserved by default under GitHub's terms. Their derivative
+    files are kept locally but excluded from git -- see
+    [`NOTICE.md`](NOTICE.md). "CC BY-NC-ND" means no derivatives may be
+    redistributed, which is why only CMsiRNAdb's untouched original TSV is
+    committed and its per-gene subsets are derived at load time.
 
 ## Genes in this dataset
 
