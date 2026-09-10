@@ -14,7 +14,7 @@ this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
 **Currently: 18,072 siRNA records across 113 genes** (`load_records()`
-default). Every source is individually toggleable via its own `include_*`
+default). Every source is individually toggleable via its own `include_<data-source>`
 flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
 per-source breakdown and audit.
 
