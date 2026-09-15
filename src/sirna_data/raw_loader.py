@@ -12,11 +12,14 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import median
 
 import pandas as pd
+
+from .licenses import source_keys_for_licenses
 
 # Resolution order for where the raw CSV/FASTA files live:
 #   1. SIRNA_DATA_DIR env var, if set (point this at any copy of data/raw/).
@@ -966,7 +969,8 @@ def load_records(
     include_REMOVED: bool = True,
     include_cmsirnadb: bool = True,
     include_cmsirnadb_full: bool = True,
-    include_davis2025: bool = True ) -> list[SiRNARecord]:
+    include_davis2025: bool = True,
+    licenses: Iterable[str] | None = None ) -> list[SiRNARecord]:
     """Load the full merged siRNA-efficacy dataset as a list of SiRNARecord.
 
     Each record pairs an siRNA guide sequence with the local mRNA window
@@ -986,37 +990,67 @@ def load_records(
     export required. If omitted, falls back to `SIRNA_DATA_DIR` if set, else
     the package's default relative `data/raw/` location (see `DATA_DIR`).
 
+    `licenses` restricts the load to sources carrying one of the given
+    license ids, e.g. `load_records(licenses=["CC BY 4.0", "CC BY 2.0"])` for
+    only the permissively-licensed sources -- so "load what my project is
+    allowed to use" doesn't mean hand-maintaining a list of `include_*`
+    flags as sources are added. Ids are matched case- and
+    punctuation-insensitively but are version-specific (`"CC BY-NC"` and
+    `"CC BY-NC 4.0"` are two different sources' two different stated terms);
+    `sirna_data.list_licenses()` returns every accepted id and
+    `list_sources()` the full per-source table. An id no source carries
+    raises ValueError rather than quietly loading nothing. `None` (the
+    default) means no license filtering at all.
+
+    `licenses` and the `include_*` flags INTERSECT: a source loads only if
+    its own flag is True *and* its license is selected. Note that excluding
+    sources changes what the two dedup-against-what's-already-loaded sources
+    (CMsiRNAdb_full, Davis2025) consider new, so they can contribute more
+    records in a filtered load than in the full one -- by design, since
+    those duplicates were only being dropped in favor of a source that is
+    now absent.
+
     Licensing: this function's code is MIT licensed, but the DATA it returns
     is not -- most sources are Creative Commons Non-Commercial and restrict
-    commercial use (see NOTICE.md). Calling this prints a one-time reminder
-    to stderr (silence it with SIRNA_DATA_QUIET=1).
+    commercial use (see NOTICE.md), and two carry no established license at
+    all. Selecting by `licenses` is a convenience built on this repo's
+    documented per-source table (`sirna_data.licenses`), not legal advice --
+    read the real terms before relying on it. Calling this prints a one-time
+    reminder to stderr (silence it with SIRNA_DATA_QUIET=1).
     """
     _maybe_show_license_notice()
     resolved_dir = Path(data_dir) if data_dir is not None else DATA_DIR
     csv_path = csv_path or resolved_dir / "sirna_efficacy.csv"
     fasta_path = fasta_path or resolved_dir / "mrna_transcripts.fasta"
 
+    # A license selection resolves to the same source keys the include_*
+    # flags name, then intersects with them (see the docstring).
+    allowed = None if licenses is None else frozenset(source_keys_for_licenses(licenses))
+
+    def wanted(key: str, include_flag: bool) -> bool:
+        return include_flag and (allowed is None or key in allowed)
+
     records: list[SiRNARecord] = []
-    if include_sirna_efficacy:
+    if wanted("sirna_efficacy", include_sirna_efficacy):
         records += _load_sirnaefficacydb_records(csv_path, fasta_path, flank_nt)
-    if include_monopoli:
+    if wanted("monopoli", include_monopoli):
         records += _load_monopoli_records(flank_nt, resolved_dir)
-    if include_REMOVED:
+    if wanted("REMOVED", include_REMOVED):
         records += _load_REMOVED_records(flank_nt, resolved_dir)
-    if include_shabalina:
+    if wanted("shabalina", include_shabalina):
         records += _load_shabalina_records(flank_nt, resolved_dir)
-    if include_martinelli:
+    if wanted("martinelli", include_martinelli):
         records += _load_martinelli_records(flank_nt, resolved_dir)
-    if include_REMOVED:
+    if wanted("REMOVED", include_REMOVED):
         records += _load_REMOVED_records(flank_nt, resolved_dir)
-    if include_cmsirnadb:
+    if wanted("cmsirnadb", include_cmsirnadb):
         records += _load_cmsirnadb_records(flank_nt, resolved_dir)
-    if include_cmsirnadb_full:
+    if wanted("cmsirnadb_full", include_cmsirnadb_full):
         # Strand-agnostic sequence index of everything loaded so far, so the
         # 12-gene CMsiRNAdb addition only contributes genuinely new
         # sequences (see _load_cmsirnadb_full_records's docstring).
         records += _load_cmsirnadb_full_records(flank_nt, _sequence_index(records), resolved_dir)
-    if include_davis2025:
+    if wanted("davis2025", include_davis2025):
         # Recomputed (not reused) so it also covers CMsiRNAdb_full's own
         # additions -- Davis2025 targets APP/MAPT, both also present there.
         records += _load_davis2025_records(flank_nt, _sequence_index(records), resolved_dir)

@@ -14,6 +14,13 @@ beyond non-commercial research, and see
 [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for full terms and provenance
 per source.
 
+This table is also available in code as
+`sirna_data.list_sources()` / `sirna_data.list_licenses()`, and
+`load_records(licenses=[...])` loads only the sources carrying the licenses
+you name (see the README's "Loading only the licenses you can use"). The
+code copy lives in `src/sirna_data/licenses.py` and is kept in sync with
+this file — it is a convenience, not legal advice.
+
 ## Sources loaded by `load_records()`
 
 | Source | File(s) | License | Commercial use? |

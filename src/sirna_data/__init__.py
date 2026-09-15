@@ -10,12 +10,27 @@ where every row comes from.
 
 `fetch_mrna_by_gene()` looks up a gene's RefSeq mRNA transcript live from
 NCBI, for callers that only have a gene symbol.
+
+`list_genes()` / `describe_genes()` list what genes are available to load
+before you load them, and `list_licenses()` / `list_sources()` expose the
+per-source data-license table that `load_records(licenses=[...])` selects
+on -- the code here is MIT, the data it loads is not.
 """
 from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
 
 from .evaluation import GeneCorrelation, PredictionMetrics, evaluate_predictions
+from .genes import GeneInfo, describe_genes, list_genes
+from .licenses import (
+    LICENSE_UNRESOLVED,
+    SOURCE_LICENSES,
+    SourceLicense,
+    license_for_source,
+    list_licenses,
+    list_sources,
+    normalize_license,
+)
 from .ncbi_fetch import FetchedTranscript, GeneNotFoundError, fetch_mrna_by_gene
 from .rank_confidence import (
     min_top_k_for_confidence,
@@ -32,6 +47,16 @@ __all__ = [
     "SiRNARecord",
     "read_fasta",
     "DATA_DIR",
+    "list_genes",
+    "describe_genes",
+    "GeneInfo",
+    "list_licenses",
+    "list_sources",
+    "license_for_source",
+    "normalize_license",
+    "SourceLicense",
+    "SOURCE_LICENSES",
+    "LICENSE_UNRESOLVED",
     "fetch_mrna_by_gene",
     "FetchedTranscript",
     "GeneNotFoundError",

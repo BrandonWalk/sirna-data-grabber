@@ -218,6 +218,11 @@ to comply with them separately. See [`NOTICE.md`](NOTICE.md) for the
 per-source summary and [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for
 full terms before using the data itself, especially commercially.
 
+The same per-source table is available in code (`sirna_data.list_sources()`),
+and `load_records(licenses=[...])` loads only the sources carrying the
+licenses you name -- see [Loading only the licenses you can
+use](#loading-only-the-licenses-you-can-use).
+
 ## What's here
 
 ```
@@ -233,6 +238,8 @@ data/
   *.png                      figures referenced by the docs above
 src/sirna_data/
   raw_loader.py               load + merge every source into SiRNARecord rows
+  genes.py                     list_genes / describe_genes -- what genes are available to load
+  licenses.py                  machine-readable per-source data-license table (load_records(licenses=...))
   ncbi_fetch.py                fetch a gene's RefSeq mRNA transcript by symbol
   sequence_utils.py            DNA/RNA sequence helpers (to_rna, to_dna, transcribe_template_to_mrna)
   splitting.py                 train_test_split / leave_n_genes_out dataset splitters
@@ -250,6 +257,8 @@ src/sirna_data/
     cmsirnadb.py                 CMsiRNAdb + NCBI -> cmsirnadb_full_raw.tsv, cmsirnadb*_transcripts.fasta
 tests/
   test_raw_loader.py          unit tests for raw_loader.py (fixtures, no real data needed)
+  test_genes.py               unit tests for genes.py
+  test_licenses.py            unit tests for licenses.py (incl. registry/loader sync check)
   test_ncbi_fetch.py          unit tests for ncbi_fetch.py (mocked HTTP calls)
   test_fetch_cli.py           unit tests for fetch/cli.py
   test_sequence_utils.py      unit tests for sequence_utils.py
@@ -352,13 +361,77 @@ transcript.accession, transcript.sequence
 `load_records()` takes `include_sirna_efficacy` / `include_monopoli` /
 `include_REMOVED` / `include_shabalina` / `include_martinelli` /
 `include_cmsirnadb` / `include_cmsirnadb_full` / `include_davis2025` flags
-(all default `True`) to include or exclude any individual source, including
-the primary siRNAEfficacyDB set -- no source is loaded unconditionally.
+(all default `True`) to include or exclude any individual source.
 
 `data_dir` (a `Path` or `str`) points every source at a specific directory of
 fetched files, as a plain function argument -- no `SIRNA_DATA_DIR` export
 required. It falls back to `SIRNA_DATA_DIR` if set, then the package's
 default relative `data/raw/` location, in that order.
+
+### Listing the genes available to load
+
+```python
+from sirna_data import list_genes, describe_genes
+
+list_genes()          # ['ACP5', 'AGT', 'AKT1', ...] -- all 113, sorted
+len(list_genes())     # 113
+
+# same thing with per-gene detail:
+for info in describe_genes():
+    info.gene         # 'APP'
+    info.n_records    # 1244
+    info.sources      # ('CMsiRNAdb_full', 'Davis2025', 'Monopoli2023')
+    info.licenses     # ('CC BY 4.0', 'CC BY-NC-ND 4.0')  -- mixed: see below
+    info.accessions   # ('NM_000484', 'NM_001198823', ...)
+```
+
+Both are computed from the actual fetched data files rather than a
+hardcoded table, so they can't go stale, and both accept every
+`load_records()` argument -- `list_genes(licenses=["CC BY 4.0"])`,
+`list_genes(include_cmsirnadb_full=False)`, `list_genes(data_dir="./my_data")`
+-- so you can ask what a given subset contains before loading it. Since
+that means a full load under the hood, pass records you already have to
+skip it: `list_genes(records)`.
+
+Gene strings are the raw sources' own, not normalized -- `"EGFP"` and
+`"EGFP "` stay two entries, for the reason in the gene-table footnote above.
+
+### Loading only the licenses you can use
+
+The data's licenses vary per source and most are non-commercial (see
+[License](#license) below). That table is also available in code, so
+"load only what my project is allowed to use" doesn't mean maintaining your
+own list of `include_*` flags:
+
+```python
+from sirna_data import load_records, list_licenses, list_sources, license_for_source
+
+list_licenses()
+# ['CC BY 2.0', 'CC BY 4.0', 'CC BY-NC', 'CC BY-NC 4.0', 'CC BY-NC-ND 4.0', 'unresolved']
+
+# only the permissively-licensed sources (Shabalina 2006, Monopoli 2023, Davis 2025):
+records = load_records(licenses=["CC BY 4.0", "CC BY 2.0"])
+len(records), len({r.gene for r in records})   # 1255, 45
+
+for source in list_sources():
+    source.license_id                   # 'CC BY-NC-ND 4.0'
+    source.commercial_use               # False  (None == unresolved, NOT "probably fine")
+    source.derivatives_redistributable  # False  (the "ND" term)
+    source.notes                        # the caveat worth reading
+
+license_for_source(records[0].source).license_id   # per-record provenance -> license
+```
+
+License ids are matched case- and punctuation-insensitively (`"cc-by-4.0"`
+works) but are version-specific, since two sources here state two different
+things (`"CC BY-NC"` vs `"CC BY-NC 4.0"`). An id no source carries raises
+`ValueError` listing the valid ones, rather than quietly loading nothing.
+`licenses=` intersects with the `include_*` flags, and the two
+unresolved-license sources are never selected by a CC license -- only by
+asking for `"unresolved"` explicitly.
+
+This registry is a machine-readable copy of [`NOTICE.md`](NOTICE.md)'s
+table, not legal advice; read the real terms before relying on it.
 
 ### Splitting into train/test
 

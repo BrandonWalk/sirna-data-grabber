@@ -523,6 +523,61 @@ def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake
     assert records == []
 
 
+def test_load_records_licenses_selects_by_license(patch_data_dir: Path):
+    # the permissively-licensed fixture sources: monopoli (CC BY 4.0),
+    # shabalina (CC BY 2.0), davis2025 (CC BY 4.0, 2 rows)
+    records = load_records(flank_nt=FLANK, licenses=["CC BY 4.0", "CC BY 2.0"])
+    assert {r.source for r in records} == {"Monopoli2023", "Shabalina2006", "Davis2025"}
+    assert len(records) == 4
+
+
+def test_load_records_licenses_groups_sources_sharing_a_license(patch_data_dir: Path):
+    records = load_records(flank_nt=FLANK, licenses=["CC BY-NC-ND 4.0"])
+    assert {r.source for r in records} == {"CMsiRNAdb", "CMsiRNAdb_full"}
+
+
+def test_load_records_licenses_accepts_punctuation_and_case_variants(patch_data_dir: Path):
+    assert load_records(flank_nt=FLANK, licenses=["cc-by-nc"]) == load_records(
+        flank_nt=FLANK, licenses=["CC BY-NC"]
+    )
+
+
+def test_load_records_licenses_intersects_with_include_flags(patch_data_dir: Path):
+    records = load_records(
+        flank_nt=FLANK, licenses=["CC BY 4.0", "CC BY 2.0"], include_davis2025=False
+    )
+    assert {r.source for r in records} == {"Monopoli2023", "Shabalina2006"}
+
+
+def test_load_records_licenses_empty_selection_loads_nothing(patch_data_dir: Path):
+    assert load_records(flank_nt=FLANK, licenses=[]) == []
+
+
+def test_load_records_licenses_none_means_no_filtering(patch_data_dir: Path):
+    assert load_records(flank_nt=FLANK, licenses=None) == load_records(flank_nt=FLANK)
+
+
+def test_load_records_licenses_rejects_unknown_license(patch_data_dir: Path):
+    # a typo'd or wishfully-broad license must fail loudly, not load nothing
+    with pytest.raises(ValueError, match="unknown license"):
+        load_records(flank_nt=FLANK, licenses=["MIT"])
+
+
+def test_load_records_licenses_does_not_include_unresolved_sources(patch_data_dir: Path):
+    every_cc_license = [
+        "CC BY 2.0",
+        "CC BY 4.0",
+        "CC BY-NC",
+        "CC BY-NC 4.0",
+        "CC BY-NC-ND 4.0",
+    ]
+    sources = {r.source for r in load_records(flank_nt=FLANK, licenses=every_cc_license)}
+    assert "REMOVED_REMOVED" not in sources
+    # ...and is loadable only by asking for "unresolved" explicitly
+    unresolved = load_records(flank_nt=FLANK, licenses=["unresolved"])
+    assert {r.source for r in unresolved} == {"REMOVED_REMOVED"}
+
+
 def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
     # csv_path/fasta_path omitted -> should fall back to DATA_DIR/<default filenames>,
     # which patch_data_dir has already pointed at the fixture directory.
