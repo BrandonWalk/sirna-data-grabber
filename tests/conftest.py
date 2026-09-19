@@ -37,6 +37,18 @@ DAVIS2025_RIGHT_FLANK = "UUUUUUUUUUUUUUU"  # 15nt
 CMSIRNADB_PCSK9_SITE = ("ACGU" * 5)[:19]
 CMSIRNADB_OTHER_SITE = ("GCUA" * 5)[:19]
 
+# Harborth2003 rows carry both strands directly (like the primary source):
+# a 21nt antisense (19nt core + 2nt overhang) and the 19nt sense that is
+# expected to match the transcript.
+HARBORTH2003_SITE = ("AUGG" * 5)[:19]
+
+# Sciabola2013 rows are 21nt (19nt duplex core + 2nt overhang). The first
+# site appears whole in its transcript; the second one's leading 2nt do NOT
+# (a duplex whose overhang isn't target-derived), exercising the loader's
+# 19nt-core fallback.
+SCIABOLA2013_SITE = ("GUCA" * 6)[:21]
+SCIABOLA2013_CORE_ONLY_SITE = ("CAGU" * 6)[:21]
+
 # Martinelli rows also need a full 19nt core -- only the first 19nt of the
 # stored (21nt, overhang-included) "Sequence" field is expected to match the
 # transcript; the trailing 2nt overhang is each row's own synthetic tail,
@@ -132,6 +144,48 @@ def fake_data_dir(tmp_path: Path) -> Path:
     )
     _write_fasta(
         data_dir / "martinelli_transcripts.fasta", {"MARTACC": _transcript(MARTINELLI_SITE)}
+    )
+
+    # Sciabola2013 (Supplementary Tables S3/S4): row 1 locates whole;
+    # row 2 locates only by its 19nt core; row 3's accession has no
+    # transcript at all (duplex-only context). Labels are the mean of the
+    # dose columns present, so the three rows also cover 4-dose, 1-dose and
+    # 2-dose rows.
+    (data_dir / "sciabola2013_extra.csv").write_text(
+        "Compound_Name,Gene,Source_Gene_Label,Accession_number,Sense_21mer,"
+        "Table_S3_Sequence,Table_S3_Strand,Pct_Inhibition_008nM,"
+        "Pct_Inhibition_04nM,Pct_Inhibition_2nM,Pct_Inhibition_10nM\n"
+        f"19p2_1,SCIAGENE,SciaGene,SCIACC,{SCIABOLA2013_SITE},"
+        f"{raw_loader_module._revcomp(SCIABOLA2013_SITE)},antisense,10.0,20.0,30.0,40.0\n"
+        f"19p2_2,SCIAGENE,SciaGene,SCIACC,{SCIABOLA2013_CORE_ONLY_SITE},"
+        f"{SCIABOLA2013_CORE_ONLY_SITE},sense,,,,80.0\n"
+        f"19p2_3,SCIAGENE2,SciaGene2,SCIACC_MISSING,{('ACGU' * 6)[:21]},"
+        f"{('ACGU' * 6)[:21]},sense,5.0,15.0,,\n"
+    )
+    _write_fasta(
+        data_dir / "sciabola2013_transcripts.fasta",
+        {
+            "SCIACC": (
+                _transcript(SCIABOLA2013_SITE)
+                + LEFT_FLANK
+                + SCIABOLA2013_CORE_ONLY_SITE[2:]
+                + RIGHT_FLANK
+            )
+        },
+    )
+
+    # Harborth2003 (lamin A/C panel via Ichihara 2007): both strands given
+    # directly. Row 1 locates cleanly; row 2's accession has no transcript.
+    harborth_antisense = raw_loader_module._revcomp(HARBORTH2003_SITE)
+    (data_dir / "harborth2003_extra.csv").write_text(
+        "Compound_Name,Gene,Accession_number,Antisense_21mer,Sense_19mer,"
+        "Pct_Inhibition,Source_Accession,Cell\n"
+        f"B1,LAMGENE,LAMACC,{harborth_antisense}uu,{HARBORTH2003_SITE},83.0,SRCACC,HeLa\n"
+        f"B2,LAMGENE,LAMACC_MISSING,{harborth_antisense}uc,{HARBORTH2003_SITE},45.0,SRCACC,HeLa\n"
+    )
+    _write_fasta(
+        data_dir / "harborth2003_transcripts.fasta",
+        {"LAMACC": _transcript(HARBORTH2003_SITE)},
     )
 
     # CMsiRNAdb: a single raw master TSV feeds both _load_cmsirnadb_records
@@ -239,6 +293,9 @@ class FixtureConstants:
     cmsirnadb_pcsk9_site = CMSIRNADB_PCSK9_SITE
     cmsirnadb_other_site = CMSIRNADB_OTHER_SITE
     martinelli_site = MARTINELLI_SITE
+    harborth2003_site = HARBORTH2003_SITE
+    sciabola2013_site = SCIABOLA2013_SITE
+    sciabola2013_core_only_site = SCIABOLA2013_CORE_ONLY_SITE
     davis2025_site = DAVIS2025_SITE
     davis2025_left_flank = DAVIS2025_LEFT_FLANK
     davis2025_right_flank = DAVIS2025_RIGHT_FLANK

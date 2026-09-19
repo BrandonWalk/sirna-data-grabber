@@ -162,9 +162,8 @@ def test_license_for_source_exact_match():
 
 
 def test_license_for_source_resolves_discriminated_sources_by_prefix():
-    # REMOVED rows carry their original paper in the source string.
-    assert license_for_source("REMOVED_Sciabola2013").key == "REMOVED"
-    assert license_for_source("REMOVED_Harborth2001").key == "REMOVED"
+    # A `<registered source>_<discriminator>` string resolves to its entry.
+    assert license_for_source("CMsiRNAdb_some_future_subset").key == "cmsirnadb"
 
 
 def test_license_for_source_prefers_exact_over_prefix():

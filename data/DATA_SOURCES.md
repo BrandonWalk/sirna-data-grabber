@@ -8,11 +8,11 @@ suitable for a regression/classification target), and how much. For the broader
 landscape of sources considered — including ones never obtained or not pursued
 further — see `POTENTIAL_DATA_SOURCES.md`.
 
-- **Trainable records currently integrated: 7,505** across **103 genes**, all with a
-  numeric %-knockdown label. (18,072 records / 113 genes if the CMsiRNAdb full-database
+- **Trainable records currently integrated: 7,518** across **108 genes**, all with a
+  numeric %-knockdown label. (18,085 records / 117 genes if the CMsiRNAdb full-database
   retrieval and Davis2025 below are also included — both on by default via
   `include_cmsirnadb_full=True` / `include_davis2025=True`; see their own sections.)
-- **7 sources** supply that headline 7,505; **siRNAEfficacyDB (3,532)** and the
+- **8 sources** supply that headline 7,518; **siRNAEfficacyDB (3,532)** and the
   **CMsiRNAdb PCSK9 subset (2,756)** are 84% of it.
 - **siRecords** was recovered (3,117 rated records, ~1,400 new gene accessions) but is
   **NOT trainable as-is** — its label is a 4-level ordinal rating, not a numeric
@@ -21,18 +21,19 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
   `modification_chemistry`/`sense_modifications`/`antisense_modifications` — see
   "Chemical modification data" below.
 
-### Integrated — trainable data (7,505 records)
+### Integrated — trainable data (7,518 records)
 
 | Source | Records | New genes | Metric | Notes |
 |---|---|---|---|---|
-| **siRNAEfficacyDB** (Zhang 2024) | **3,532** | 41 (baseline) | numeric %Inhibition | Primary source; `sirna_efficacy.csv`. |
+| **siRNAEfficacyDB** (Zhang 2024) | **3,488** | 40 (baseline) | numeric %Inhibition | Primary source; `sirna_efficacy.csv`. Its 44-row `Lamin A` block is corrupt (44 copies of one duplex) and is superseded by the Harborth 2003 section below — 3,532 rows load when `include_harborth2003=False`. |
 | **CMsiRNAdb — PCSK9 subset** (He 2026) | **2,756** | +1 | numeric inhibition | Patent-derived, chemically modified; derived at load time from `cmsirnadb_full_raw.tsv` (CC BY-NC-ND, no derivative file shipped). |
 | **Shabalina 2006** | **269** | +41 | numeric (100−Activity) | 269 new after dedup vs 653 in paper; `shabalina_extra.csv`. |
 | **Monopoli 2023** | **20** | +4 (APP/MAPT/BACE1/SNCA) | numeric (100−reporter) | Modified sdRNA; `monopoli_extra.csv`. |
-| **REMOVED panel (Xu/Zhao 2024, REMOVED)** | **8** | +1 (REMOVED) | numeric (qPCR knockdown %) | Recovered from deleted file in repo's git history, verified against NM_005018.3; license unresolved but `REMOVED` is committed at the user's explicit request — see `NOTICE.md`. |
+| **REMOVED panel (Xu/Zhao 2024, REMOVED)** | **8** | +1 (REMOVED) | numeric (qPCR knockdown %) | Recovered from deleted file in repo's git history, verified against NM_005018.3; license unresolved, so `REMOVED` is kept locally but excluded from git — see `NOTICE.md`. |
 | **Martinelli 2023 / sirna-reproduction** | **577** | +12 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA, KAZRIN, MIR155HG, CDKN1B, SOD2_chimp, CASR_rhesus) | numeric (PCT) | 577 of 907 rows resolved — 253 by source-document tracing, 324 more by brute-force sequence matching. See the section below. |
-| **REMOVED repo (Sciabola 2013 + Harborth 2001)** | **343** | +3 (HIF1A, HK2, HPSE; the 43 Harborth-traced rows merge into the existing Lamin A group) | `label * 100`, **interpreted as %KD** (not independently verified — see the section below) | Gene identity independently verified by exact 19nt match; the metric is a stated interpretation of an undocumented normalized value, not a confirmed true value. |
-| **TOTAL** | **7,505** | **103 genes** | — | — |
+| **Sciabola et al. 2013 in-house panel** (NAR Supp. Tables S3/S4) | **356** | +4 (BIRC5, EZH2, MTOR, BRAF; also re-sources HIF1A/HK2/HPSE and adds rows to MYC/CTNNB1/PIK3CA) | numeric %Inhibition (mean of the doses each row was screened at) | The paper's own Hep3B/QuantiGene 2.0 measurements, CC BY-NC 3.0. `sciabola2013_extra.csv`. |
+| **Harborth et al. 2003 lamin A/C panel** (via Ichihara et al. 2007) | **44** | +0 (replaces the corrupt `Lamin A` block in the primary source) | numeric % Inhibition, **protein-level** (immunoblot, HeLa) | The real 44-duplex panel, from Ichihara 2007's CC BY-NC 2.0 UK republication. Supersedes both second-hand copies the corpus used to carry. `harborth2003_extra.csv`. |
+| **TOTAL** | **7,518** | **108 genes** | — | — |
 
 ### Obtained, not integrated
 
@@ -146,11 +147,13 @@ products, so its prepared data files are not safe to vendor into this project.
   attempted (this tooling won't solve CAPTCHAs). The user downloaded
   `gkaf479_supplemental_files.zip` manually from their own browser
   session and supplied `Supplemental Tables.xlsx` from it; `davis2025_extra.csv`
-  was derived from that file's "Supplemental Table 1" sheet. Because
-  acquisition required a human in the loop, there is no
-  `sirna_data/fetch/davis2025.py` — same pattern as `REMOVED`/
-  `martinelli_extra.csv`/`REMOVED`, which also have no
-  corresponding fetcher (see `src/sirna_data/fetch/__init__.py`).
+  was derived from that file's "Supplemental Table 1" sheet. **That manual step
+  is no longer needed**: Europe PMC's public supplementaryFiles API serves the
+  same `gkaf479_supplemental_files.zip` with no challenge, so
+  `sirna_data.fetch.davis2025` now fetches and filters it in-process (the
+  workbook is read by `sirna_data/fetch/_xlsx.py`, no openpyxl required).
+  Verified: the fetcher reproduces the committed `davis2025_extra.csv` row for
+  row, every cell.
 - **No transcript FASTA for this source**: unlike every other loader, this
   source ships its own local 50nt mRNA window per row directly in the raw
   table (the target's "consensus sequence across mRNA variants expressed in
@@ -226,20 +229,30 @@ products, so its prepared data files are not safe to vendor into this project.
   e.g. `0.972747`); we store `label = 100 * Efficiency_QPCR` (mRNA-level,
   matching this dataset's dominant `%Inhibition` convention) and keep the
   luciferase value alongside as `Efficiency_LUC_Pct` for reference.
-- **License caveat, unresolved — committed anyway at the user's explicit
-  request**: unlike every other source in this file, the REMOVED repo
+- **License caveat, unresolved — the file is gitignored**: unlike every
+  other source in this file, the REMOVED repo
   ships no `LICENSE` file (all-rights-reserved by default under GitHub's
   terms), and the associated *GENE* (Elsevier) paper is not confirmed
   open-access. This is the same situation as siRecords below: obtained
   from a real but non-canonical channel (deleted-file git history rather
   than a publisher-sanctioned download). The gap was raised and the user
-  chose to commit `data/raw/REMOVED` to this repo regardless — see
-  `NOTICE.md` for the commercial-use caveat that travels with it. The
+  chose to commit `data/raw/REMOVED` regardless; it has since been
+  untracked, so the file is kept locally but excluded from git
+  (`.gitignore`), matching what `NOTICE.md` always said. There is no
+  fetcher for it, so a fresh clone cannot reproduce these 8 rows —
+  `load_records()` just returns 8 fewer records. The
   transcript FASTA (`REMOVED`) is pure NCBI RefSeq (public
   domain) and is committed as normal.
-- Fetched by hand (no `sirna_data.fetch.*` module yet, given the small
-  size) into `data/raw/REMOVED` and `data/raw/REMOVED`;
-  loaded by `_load_REMOVED_records` in `src/sirna_data/raw_loader.py`.
+- Fetched by `sirna_data.fetch.REMOVED` (`sirna-data-fetch`) from the pinned
+  parent commit on `raw.githubusercontent.com` into `data/raw/REMOVED`
+  and `data/raw/REMOVED`; loaded by `_load_REMOVED_records` in
+  `src/sirna_data/raw_loader.py`. Having a fetcher is what makes the
+  unresolved license workable: the file is gitignored, so this repo never
+  redistributes it, and each user fetches their own copy knowingly. The
+  upstream CSV's header labels are undocumented, so the fetcher identifies
+  columns by content (the sequence by its alphabet, the two efficiency
+  columns by being numeric) and refuses to write anything unless it parses
+  exactly 8 rows whose sequences are all present in `NM_005018`.
 
 ## Supplementary siRNA data: Shabalina, Spiridonov & Ogurtsov 2006
 
@@ -455,6 +468,31 @@ products, so its prepared data files are not safe to vendor into this project.
   `modification_chemistry` are populated from this; like Monopoli2023 (and
   unlike CMsiRNAdb), the annotation is per-molecule, not per-position, so
   `sense_modifications`/`antisense_modifications` stay `None`.
+- Fetched by `sirna_data.fetch.martinelli` (`sirna-data-fetch`) from the
+  upstream 907-row table on `raw.githubusercontent.com`, with gene identity
+  recovered mechanically: the longest window of either strand that occurs in
+  exactly ONE of the 13 traced transcripts decides the row's gene, and a
+  window matching two (the firefly luciferase reporters overlap) is dropped
+  rather than guessed. Verified: **a re-fetch reproduces the committed
+  `martinelli_extra.csv` byte for byte.**
+- **Canonical form**: the hand-built file originally mixed conventions --
+  DNA overhangs written `T` on some rows and `U` on others, `PCT` as both
+  `0` and `0.0`, rows in no particular order -- so a re-fetch would have
+  rewritten 473 of 577 rows. `canonical_row` in the fetcher defines the form
+  (sequences in the RNA alphabet, since the chemistry lives in the
+  modification columns rather than the letters; percentages as numbers; rows
+  ordered by experiment number), `fetch()` writes it, and
+  `python -m sirna_data.fetch.martinelli --normalize data/raw/martinelli_extra.csv
+  [--transcripts data/raw/martinelli_transcripts.fasta]` rewrites an existing
+  file into it. That command has already been run over the committed file,
+  which is why the two now agree exactly; it is idempotent, so running it
+  again is a no-op.
+- **What the stored target site is**: for a row placed by its sense strand,
+  the verified window spliced back into that strand (so the source's 2nt
+  overhang survives). For the 28 rows placed by their antisense strand --
+  where the source's sense column does not match any transcript -- the
+  reverse complement's last 19 bases, since the 2nt reverse-complementing
+  the guide's 3' overhang are not part of the target.
 - Loaded by `_load_martinelli_records` in `src/sirna_data/raw_loader.py`
   from `data/raw/martinelli_extra.csv` (the 577-row derivative with added
   gene/accession columns, and corrected sense sequences for the 28 pass-1
@@ -465,83 +503,171 @@ products, so its prepared data files are not safe to vendor into this project.
   gene-annotated subset is committed to the repo like Monopoli/Shabalina,
   not gitignored like REMOVED/siRecords.
 
-## Supplementary siRNA data: REMOVED repo (343 rows, 3 new genes; label interpreted as %KD)
+## Supplementary siRNA data: Harborth et al. 2003 lamin A/C panel (44 rows, via Ichihara et al. 2007)
 
-- github.com/drugparadigm/REMOVED — a public training-data repo for an
-  siRNA-efficacy GNN, cloned directly (its web UI is unreliable/blocked for
-  this purpose — repeatedly misreported the repo's actual file structure).
-  Ships 4 CSVs: `Hu.csv` (2,472 rows), `Mix.csv` (472 rows), `Taka.csv`
-  (~3,412 rows), `Simone.csv` (322 rows), each with `siRNA`/`mRNA`/`label`
-  columns (`mRNA` = sense/target-context strand, `siRNA` = its exact reverse
-  complement — verified programmatically for 20 sample rows across files,
-  matches this project's own loader convention of storing the sense strand
-  and deriving `guide_seq` by reverse-complementing it).
-- **Overlap check**: every REMOVED sequence was checked against this
-  project's full existing corpus by exact-core-sequence match. `Hu.csv`'s
-  2,361 overlapping rows are all already present here (from siRNAEfficacyDB
-  and others) and add nothing new. `Taka.csv` has no discoverable literature
-  citation at all (checked several candidate papers, none matched) and was
-  not pursued. `Mix.csv` and `Simone.csv` are where the genuinely new
-  content is.
-- **Gene identity — independently verified, not trusted from any file/table
-  label**: 343 rows (300 from `Simone.csv`, 43 from `Mix.csv`) were matched
-  by exact 19nt substring search of the sense strand against real NCBI
-  RefSeq transcripts, fetched fresh for this purpose. All 343 located with
-  full 30nt flanking mRNA context.
+- **The experiments**: Harborth, Elbashir, Vandenburgh, Manninga, Scaringe,
+  Weber & Tuschl 2003, *Antisense Nucleic Acid Drug Development* 13:83-105,
+  "Sequence, chemical, and structural variation of small interfering RNAs and
+  short hairpin RNAs and the effect on mammalian gene silencing"
+  (doi:10.1089/108729003321629638, PMID 12804036). 44 standard 21-nt duplexes
+  tiling lamin A/C, read out as **lamin A/C protein** by immunoblot /
+  immunofluorescence in **human HeLa** cells (mouse SW3T3 served as a second,
+  ~2x less responsive cell type).
+- **The values**: Harborth 2003 is **not** open access (Mary Ann Liebert; no
+  PMC copy, subscription archive) and carries no reuse license. The numbers
+  loaded here come instead from its republication in **Ichihara, Naito, Ui-Tei,
+  Sakuma, Juni, Ueda & Saigo 2007**, *Nucleic Acids Research* 35(18):e123,
+  "Thermodynamic instability of siRNA duplex is a prerequisite for dependable
+  prediction of siRNA activities" (doi:10.1093/nar/gkm699, PMC2094068),
+  **CC BY-NC 2.0 UK**: "© 2007 The Author(s) This is an Open Access article
+  distributed under the terms of the Creative Commons Attribution
+  Non-Commercial License (http://creativecommons.org/licenses/by-nc/2.0/uk/)
+  which permits unrestricted non-commercial use, distribution, and
+  reproduction in any medium, provided the original work is properly cited."
+  Its supplementary workbook (`nar_gkm699_...File007.xls`, fetched from PMC)
+  tabulates every dataset the i-Score model was built on with a per-row
+  `Authors` column; the 44 rows whose author is `Harborth` carry gene,
+  accession, antisense 21-mer, sense 19-mer and % inhibition. **Cite both
+  papers** when using this subset: Harborth for the experiments, Ichihara for
+  the compilation these numbers were taken from.
+- **Why this replaced two other copies of the same panel.** Before this
+  source existed, the corpus carried the panel twice, badly, and neither copy
+  was licensed:
+  1. **siRNAEfficacyDB's `Lamin A` block is corrupt.** All 44 of its rows are
+     byte-identical: same sequence pair (`GAGCUCCUGCAGGUCCUCCuu` /
+     `GGAGGACCUGCAGGAGCUC` -- this panel's B1), same 83.0% label, same cell
+     line, dose and timepoint. Checked against the whole file: every other
+     duplex in `sirna_efficacy.csv` appears exactly **once** (3,488 duplexes
+     at x1, this one at x44), and no duplex anywhere in that file carries two
+     different labels, so this is not a replicate-measurement pattern -- rows
+     that should hold B2-B44 hold B1's data. siRNAEfficacyDB's own accounting
+     lists "Harborth x44", so the intent was clearly this panel. Those 44 rows
+     are dropped in favour of this source (`_load_sirnaefficacydb_records`'s
+     `superseded_genes`).
+- **Label**: `% Inhibition` as reported -- **protein-level** knockdown in
+  HeLa, not the mRNA-level %inhibition most of this corpus carries. Treat it
+  as a different measurement family (same caveat class as Martinelli's
+  PCT/reporter rows). Sanity check against the paper's own abstract ("26 of
+  44 tested standard 21-nt siRNA duplexes reduced the protein expression by at
+  least 90%"): these rows give 25 at >=90 and 1 below 50, the one-row
+  difference being a boundary/rounding call in the abstract's count.
+- **Accession**: the paper and Ichihara's table cite `AH001498`, a segmented
+  GenBank gene record; only 42 of the 44 sense strands locate in it, while all
+  44 locate in the RefSeq mRNA `NM_170707`, so records carry `NM_170707` and
+  the raw CSV preserves the table's own accession as `Source_Accession`. This
+  also means the `Lamin A` gene group no longer spans two accessions.
+- **Verification**: both strands come from the raw table rather than being
+  derived by revcomp, and were cross-checked against each other --
+  `Antisense_21mer[:19]` is the exact reverse complement of `Sense_19mer` for
+  all 44 rows -- and every sense strand was located by exact substring match
+  in `NM_170707`.
+- Fetched by `sirna_data.fetch.harborth2003` (`sirna-data-fetch`) from
+  Europe PMC's supplementaryFiles API for PMC2094068: the workbook is read
+  in-process (`sirna_data/fetch/_ole.py`, no xlrd/LibreOffice needed), the
+  rows whose `Authors` column is `Harborth` are kept, and every sense strand
+  is checked against `NM_170707` before anything is written. Verified: the
+  fetcher reproduces the committed CSV row for row.
+- Loaded by `_load_harborth2003_records` in `src/sirna_data/raw_loader.py`
+  from `data/raw/harborth2003_extra.csv` (44 rows) and
+  `data/raw/harborth2003_transcripts.fasta` (`NM_170707`, pure NCBI RefSeq,
+  public domain). Tests: `tests/test_harborth2003.py`,
+  `tests/test_fetch_harborth2003.py`, `tests/test_fetch_ole.py`.
 
-  | Gene | Rows | Reference accession | Traced to |
-  |---|---|---|---|
-  | `HIF1A` | 100 | NM_001530.4 | Sciabola et al. 2013 |
-  | `HK2` | 95 | NM_000189.5 | Sciabola et al. 2013 |
-  | `HPSE` | 105 | NM_006665.5 | Sciabola et al. 2013 |
-  | `Lamin A` (merged into the existing gene group, not a new `LMNA` label) | 43 | NM_170707.4 | Harborth et al. 2001 (via Sciabola 2013's compilation) |
+## Supplementary siRNA data: Sciabola et al. 2013 in-house panel (356 rows, 4 new genes)
 
-  `Simone.csv`'s 300 rows trace to Sciabola et al. 2013's "HUVK" siRNA
-  training compilation (via its title/scope match plus a literature search;
-  the paper's own Supplementary Table S4 could not be fetched to confirm
-  row-for-row — see the metric caveat below). `Mix.csv`'s 43 lamin-A/C rows
-  are labeled by Sciabola 2013 as citing Harborth et al. 2001 — but
-  Harborth's own paper (read in full via an open academia.edu mirror) does
-  not actually contain a 44-siRNA panel with individual values; it
-  describes a single validated lamin A/C siRNA used as one tool within a
-  21-gene essential-gene screen. So these 43 rows' real origin is most
-  likely Huesken et al. 2005's large-scale tiling-array supplementary data
-  (the systematic source Sciabola's compilation most plausibly drew the
-  numeric values from), not Harborth's paper itself — not yet independently
-  confirmed.
-- **THE METRIC — read this before using this subset for anything where the
-  label's exact scale matters.** REMOVED does not ship the original
-  papers' reported %-knockdown values, only its own `label` column (~0–1
-  range), which is undocumented anywhere in the REMOVED repo (its own
-  `Preprocess2.py` preprocessing script and README were both checked —
-  neither defines it). An initial attempt fit `label * 134.1 = true
-  %Inhibition` from `Hu.csv`'s 2,361 overlapping rows (R²=1.0, seemingly
-  exact) — but the same formula, tested against `Mix.csv`'s own 420
-  overlapping rows, gave R²=0.82 with concrete counterexamples (the same
-  `label=0.25` value mapping to four different true percentages: 62, 62, 0,
-  -27). `Hu.csv`, `Mix.csv`, and `Taka.csv` each independently max out at
-  exactly `label=1.0` — consistent with each source file being
-  max-normalized to its own scale by whatever pipeline built these CSVs,
-  not one shared constant across the repo. `Simone.csv` has zero rows
-  overlapping this project's existing corpus, so the formula was never even
-  checkable against it. Pulling the true values directly from the primary
-  sources was attempted and blocked: Sciabola et al. 2013's Supplementary
-  Table S4 returns HTTP 403 from Oxford's CDN; PubMed, PMC, and the journal
-  page itself are reCAPTCHA/paywall-blocked; Europe PMC's API is
-  rate-limited. **Given that, `label * 100` is used directly as %KD here per
-  explicit instruction — a stated interpretation of an undocumented
-  normalized value, not an independently verified true reported knockdown
-  percentage.** Anyone relying on this subset for anything where the exact
-  scale matters should treat it accordingly, and revisit if Huesken et al.
-  2005's own supplementary data (the more plausible true source for the
-  `Mix.csv` rows) or Sciabola 2013's Table S4 become reachable.
-- Loaded by `_load_REMOVED_records` in `src/sirna_data/raw_loader.py`
-  from `data/raw/REMOVED` (343-row derivative:
-  `Sequence,Gene,Accession_number,Pct_Inhibition,Source_Paper`) and
-  `data/raw/REMOVED_transcripts.fasta` (4 reference sequences). **License**:
-  REMOVED's own repo carries no explicit license file — treated as
-  all-rights-reserved by default, same convention as the REMOVED panel; see
-  `NOTICE.md`.
+- Sciabola, Cao, Orozco, Faustino & Stanton 2013, *Nucleic Acids Research*
+  41(3):1383-1394, "Improved nucleic acid descriptors for siRNA efficacy
+  prediction" (doi:10.1093/nar/gks1191, PMID 23241392, PMC3561943).
+  **CC BY-NC 3.0** -- the article's own stated terms, printed on PMC's
+  copyright block: "This is an Open Access article distributed under the
+  terms of the Creative Commons Attribution License
+  (http://creativecommons.org/licenses/by-nc/3.0/), which permits
+  non-commercial reuse, distribution, and reproduction in any medium,
+  provided the original work is properly cited." Supplementary data rides on
+  the article's license, so the derived CSV is redistributable here with
+  attribution, non-commercially -- same footing as siRNAEfficacyDB.
+- **What it is**: the paper's own in-house panel, run at the Pfizer
+  Oligonucleotide Therapeutic Unit -- not a literature compilation. It
+  designed 21-nt siRNAs ("19p2": 19nt duplex core + 2nt target-matching 3'
+  overhangs, per the paper's Figure 4) against ten hepatocellular-carcinoma
+  relevant genes and screened them at up to four concentrations.
+  Supplementary **Table S3** carries the sequences, Supplementary **Table
+  S4** the measured % inhibition per dose.
+- **Assay**: "Hep3B cells (American Type Culture Collection) were grown in
+  EMEM (ATCC) supplemented with 10% fetal calf serum", transfected with
+  Lipofectamine RNAiMAX, and "QuantiGene 2.0 assay (Affymetrix Inc. Santa
+  Clara, CA) was used to measure the expression level of target genes before
+  and after knockdown in Hep3B cell lines" 48 h post-transfection. So every
+  row is mRNA-level knockdown in Hep3B -- the same readout family as
+  siRNAEfficacyDB's qPCR rows and Davis 2025's QuantiGene rows.
+- **Obtaining the file**: Oxford's own supplementary CDN link for this
+  article returns HTTP 403, but PMC hosts the same file --
+  `supp_gks1191_nar-01814-n-2012-File002.doc`, linked from PMC3561943, a
+  21-page Word document containing Tables S1-S4. It was fetched through a
+  browser (PMC gates supplementary downloads behind its own client-side
+  check; no CAPTCHA was solved and nothing was scraped around it), converted
+  browser and, at first, converted with LibreOffice. That manual step is no
+  longer needed: `sirna_data.fetch.sciabola2013` (`sirna-data-fetch --only
+  sciabola2013`) now pulls the same file through Europe PMC's public
+  supplementaryFiles API and parses the Word tables directly, with no
+  dependency beyond pandas and the standard library (see
+  `sirna_data/fetch/_ole.py`). Verified: the fetcher reproduces the committed
+  `sciabola2013_extra.csv` row for row. A copy of the document is kept at
+  `data/gks1191_supplemental_files/Supplementary Tables S1-S4.doc`.
+- **Rows**: Table S3/S4 list 361 21-mers -- HIF1A 100, HK2 99, HPSE 110, and
+  seven follow-up genes at 5-10 each (MTOR/`FRAP1` 10, BIRC5/`SURVIVIN` 9,
+  MYC/`c-Myc` 9, EZH2 9, BRAF/`bRAF` 5, CTNNB1 5, PIK3CA 5). 356 are
+  integrated. The table's 591 R-/L-Dicer substrates (25/27-mers, a different
+  duplex architecture) are **not** loaded -- a candidate for a future
+  `include_*` subset, not part of this addition.
+- **Gene identity, verified per row, and a strand surprise**: Table S3's
+  sequence column turned out to MIX orientations -- 333 of the 361 rows are
+  the antisense (guide) strand and 23 are the sense strand (all 10 MTOR
+  rows, all 5 PIK3CA, 5 of 9 BIRC5, 2 of 9 MYC, 1 of 5 BRAF). Every row was
+  therefore tested in both orientations against a freshly fetched NCBI
+  RefSeq transcript for its gene, and `sciabola2013_extra.csv` stores the
+  normalized **sense** strand (`Sense_21mer`) so the loader follows this
+  repo's usual convention (store sense, derive the guide by revcomp), with
+  the table's own string and the orientation it proved to be preserved
+  alongside as `Table_S3_Sequence` / `Table_S3_Strand`. 355 of the 356 kept
+  rows locate as a full 21nt exact match (the design's overhangs are
+  target-matching); 1 locates by its 19nt core.
+- **Dropped**: 5 of 361 rows (HK2 `19p2_103`/`19p2_133`, HPSE
+  `19p2_240`/`19p2_241`/`19p2_242`) match no checked transcript in either
+  orientation -- 6-8 mismatches at their best alignment, so not a
+  transcription typo -- and were dropped under the same verify-or-drop rule
+  every other source here follows. HPSE variants `NM_001098540.3` /
+  `NM_001166498.3` and the older `NM_006665.2` / `NM_000189.3` records were
+  checked too. One HPSE row (`19p2_244`) locates only in `NM_001098540.3`
+  and carries that accession, which is why HPSE shows two accessions in the
+  README gene table.
+- **Gene labels are normalized** to current official symbols so they group
+  with the rest of this corpus instead of fragmenting it (`HIF1a` -> `HIF1A`,
+  `SURVIVIN` -> `BIRC5`, `c-Myc` -> `MYC`, `FRAP1` -> `MTOR`, `bRAF` ->
+  `BRAF`). This is a deliberate exception to the "raw gene strings are not
+  normalized" rule that keeps `EGFP`/`EGFP ` apart: there the two spellings
+  are genuinely different source entries, whereas here they are the same
+  genes other sources already contribute under their official symbols. Each
+  row's original spelling is kept as `Source_Gene_Label`.
+- **LABEL -- the one thing to read before using these labels.** Which doses
+  exist differs by gene: HIF1A/HK2 at 0.08/0.4/2/10 nM, HPSE at 0.08/0.4/2 nM
+  (the paper stopped at 2 nM for HPSE -- "the hit rate was high enough at
+  2 nM to not require a higher concentration"), and the seven follow-up genes
+  at 10 nM only. `label` is the **mean of the doses present for that row**,
+  so it is a dose-averaged potency for the three tiled genes but a single
+  10 nM reading for the follow-up genes -- not an apples-to-apples quantity
+  across genes, and systematically lower than a top-dose label for
+  HIF1A/HK2/HPSE (e.g. `19p2_1`: 12.0 as a 3-dose mean vs 33.0 at 10 nM).
+  All four dose columns are shipped verbatim in the raw CSV
+  (`Pct_Inhibition_{008,04,2,10}nM`), and `_load_sciabola2013_records`
+  computes the mean in code, so switching to a single-dose or
+  top-dose-only label is a one-line change rather than a re-extraction.
+  Negative values are the source's own (measured expression above untreated
+  control) and are kept as reported.
+- Loaded by `_load_sciabola2013_records` in `src/sirna_data/raw_loader.py`
+  from `data/raw/sciabola2013_extra.csv` (356-row derivative) and
+  `data/raw/sciabola2013_transcripts.fasta` (11 RefSeq transcripts, pure
+  NCBI RefSeq and therefore public domain). Tests: `tests/test_sciabola2013.py`.
 
 ## Supplementary siRNA data: CMsiRNAdb, human PCSK9 subset (2,756 rows, 1 new gene)
 
@@ -883,6 +1009,17 @@ what was actually assayed.
 
 ## Known data-quality caveats (do not "fix" silently — filtered/flagged instead)
 
+- **siRNAEfficacyDB's `Lamin A` block is corrupt (44 identical rows).** All
+  44 rows of that gene are byte-identical — same sequence pair, same 83.0%
+  label, same cell line, dose and timepoint — i.e. 44 copies of one duplex
+  (Harborth et al. 2003's B1) where rows B2–B44 of that panel should be. This
+  is the only such block in the file: a duplicate-key scan of all 3,532 rows
+  finds 3,488 duplexes appearing exactly once and this one appearing 44
+  times, with no duplex anywhere carrying two different labels (so it is not
+  a replicate-measurement pattern). Not silently deduped: the whole block is
+  superseded by the real panel, loaded from Ichihara et al. 2007 — see the
+  Harborth 2003 section above. `include_harborth2003=False` loads the corrupt
+  rows again, unchanged.
 - 12 rows have `Accession_number == "-"` (a Renilla luciferase assay control,
   not an endogenous gene) — dropped during acquisition.
 - The "Takayuki" EGFP-reporter subset (702 rows, a 1-nt-resolution tiling

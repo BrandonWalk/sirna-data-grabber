@@ -457,8 +457,8 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         flank_nt=FLANK,
     )
     # 2 primary + 1 each of monopoli/REMOVED/shabalina/cmsirnadb/cmsirnadb_full
-    # + 2 martinelli + 2 davis2025
-    assert len(records) == 11
+    # + 2 martinelli + 2 harborth2003 + 3 sciabola2013 + 2 davis2025
+    assert len(records) == 16
     sources = {r.source for r in records}
     assert sources == {
         "siRNAEfficacyDB",
@@ -466,6 +466,8 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         "REMOVED_REMOVED",
         "Shabalina2006",
         "Martinelli_sirna_reproduction",
+        "Harborth2003",
+        "Sciabola2013",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
         "Davis2025",
@@ -481,6 +483,8 @@ def test_load_records_respects_include_flags(patch_data_dir: Path, fake_data_dir
         include_REMOVED=False,
         include_shabalina=False,
         include_martinelli=False,
+        include_harborth2003=False,
+        include_sciabola2013=False,
         include_cmsirnadb=False,
         include_cmsirnadb_full=False,
         include_davis2025=False,
@@ -502,8 +506,8 @@ def test_load_records_can_exclude_primary_source(patch_data_dir: Path, fake_data
     assert "siRNAEfficacyDB" not in {r.source for r in records}
     # the other supplementary sources still load by default (1 each of
     # monopoli/REMOVED/shabalina/cmsirnadb/cmsirnadb_full + 2 martinelli
-    # + 2 davis2025)
-    assert len(records) == 9
+    # + 2 harborth2003 + 3 sciabola2013 + 2 davis2025)
+    assert len(records) == 14
 
 
 def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake_data_dir: Path):
@@ -516,6 +520,8 @@ def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake
         include_REMOVED=False,
         include_shabalina=False,
         include_martinelli=False,
+        include_harborth2003=False,
+        include_sciabola2013=False,
         include_cmsirnadb=False,
         include_cmsirnadb_full=False,
         include_davis2025=False,
@@ -568,6 +574,8 @@ def test_load_records_licenses_does_not_include_unresolved_sources(patch_data_di
         "CC BY 2.0",
         "CC BY 4.0",
         "CC BY-NC",
+        "CC BY-NC 2.0 UK",
+        "CC BY-NC 3.0",
         "CC BY-NC 4.0",
         "CC BY-NC-ND 4.0",
     ]
@@ -582,7 +590,7 @@ def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
     # csv_path/fasta_path omitted -> should fall back to DATA_DIR/<default filenames>,
     # which patch_data_dir has already pointed at the fixture directory.
     records = load_records(flank_nt=FLANK)
-    assert len(records) == 11
+    assert len(records) == 16
 
 
 def test_load_records_data_dir_arg_without_env_var(
@@ -591,13 +599,15 @@ def test_load_records_data_dir_arg_without_env_var(
     # pass the directory straight to load_records().
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=fake_data_dir)
-    assert len(records) == 11
+    assert len(records) == 16
     assert {r.source for r in records} == {
         "siRNAEfficacyDB",
         "Monopoli2023",
         "REMOVED_REMOVED",
         "Shabalina2006",
         "Martinelli_sirna_reproduction",
+        "Harborth2003",
+        "Sciabola2013",
         "CMsiRNAdb",
         "CMsiRNAdb_full",
         "Davis2025",
@@ -607,7 +617,7 @@ def test_load_records_data_dir_arg_without_env_var(
 def test_load_records_data_dir_accepts_str(fake_data_dir: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=str(fake_data_dir))
-    assert len(records) == 11
+    assert len(records) == 16
 
 
 # --------------------------------------------------------------------------

@@ -132,18 +132,30 @@ def _revcomp(seq: str) -> str:
 
 
 def _load_sirnaefficacydb_records(
-    csv_path: Path, fasta_path: Path, flank_nt: int) -> list[SiRNARecord]:
+    csv_path: Path,
+    fasta_path: Path,
+    flank_nt: int,
+    superseded_genes: frozenset[str] = frozenset(),
+) -> list[SiRNARecord]:
     """siRNAEfficacyDB (Zhang et al. 2024) -- the primary source. Itself a
     compilation of classic published assays (Huesken et al. 2005 and
     others; see data/DATA_SOURCES.md), but the raw file has no per-row
     author/study column, so it can only be loaded as this one merged
     siRNAEfficacyDB source, not split back out by original study.
+
+    `superseded_genes` drops this source's rows for genes another source
+    covers better. `load_records()` uses it for exactly one case today: this
+    file's `Lamin A` block is 44 byte-identical copies of a single duplex
+    (see `_load_harborth2003_records` for the diagnosis), so when the real
+    Harborth panel is loaded those rows are dropped rather than deduped.
     """
     df = pd.read_csv(csv_path)
     transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
 
     records: list[SiRNARecord] = []
     for i, row in df.iterrows():
+        if row["Gene"] in superseded_genes:
+            continue
         guide_seq = row["Antisense_21mer"].upper()
         sense = _dna_to_rna(row["Sense_19mer"])
         transcript = transcripts.get(row["Accession_number"])
@@ -394,45 +406,51 @@ def _load_martinelli_records(flank_nt: int, data_dir: Path | None = None) -> lis
     return records
 
 
-def _load_REMOVED_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
-    """REMOVED (github.com/drugparadigm/REMOVED) training compilation:
-    343 rows genuinely new to this corpus (gene identity independently
-    verified by exact 19nt substring match against real NCBI RefSeq
-    transcripts), drawn from two of REMOVED's four source CSVs --
-    Simone.csv (300 rows: HIF1A, HK2, HPSE; traced to Sciabola et al.
-    2013's "HUVK" training compilation) and Mix.csv (43 rows: Lamin A/C,
-    traced to Harborth et al. 2001, folded into this corpus's existing
-    "Lamin A" gene group rather than a separate LMNA entry). Hu.csv and
-    Taka.csv contribute nothing here -- Hu.csv's rows all overlap
-    sequences already in this corpus, and Taka.csv has no discoverable
-    literature citation at all.
+def _load_harborth2003_records(
+    flank_nt: int,
+    data_dir: Path | None = None,
+) -> list[SiRNARecord]:
+    """Harborth et al. 2003's lamin A/C tiling panel (Antisense Nucleic Acid
+    Drug Dev. 13:83-105) -- 44 standard 21-nt duplexes walking the lamin A/C
+    mRNA, measured as lamin A/C PROTEIN knockdown in HeLa cells by
+    immunoblot/immunofluorescence.
 
-    IMPORTANT CAVEAT ON THE LABEL: REMOVED does not ship the original
-    papers' reported %-knockdown values. It ships only its own `label`
-    column, a value in ~[0, 1] with no documented derivation anywhere in
-    the REMOVED repo (checked its preprocessing script and README --
-    neither defines it). Attempting to reverse-engineer a true-value
-    conversion empirically failed: a linear fit of label against this
-    corpus's own known %Inhibition values was exact for Hu.csv (R^2=1.0,
-    slope=134.1) but that same formula broke down badly on Mix.csv
-    (R^2=0.82, the same label value mapping to 4 different true
-    percentages) -- consistent with each REMOVED source file being
-    independently max-normalized to its own scale rather than sharing one
-    true global conversion. The primary sources themselves (Sciabola et
-    al. 2013 Supplementary Table S4; Harborth et al. 2001) could not be
-    reached to pull the real reported numbers directly -- see
-    data/DATA_SOURCES.md and data/POTENTIAL_DATA_SOURCES.md history for
-    exactly what was attempted and blocked.
+    Source of the values: Harborth 2003 itself is not open access, so the
+    numbers here come from its republication in **Ichihara et al. 2007**
+    (Nucleic Acids Research 35(18):e123, doi:10.1093/nar/gkm699, PMC2094068,
+    **CC BY-NC 2.0 UK**), whose supplementary workbook tabulates every
+    dataset its i-Score model was built on with a per-row `Authors` column --
+    including all 44 Harborth rows with accession, both strands and %
+    inhibition. That republication is what makes this subset usable here:
+    the values are facts either way, but Ichihara's copy carries a license.
 
-    Given that, `label` is used directly here as %KD (`label * 100`) per
-    explicit instruction -- this is a stated interpretation of an
-    undocumented normalized value, NOT an independently verified true
-    reported knockdown percentage. Treat this subset accordingly if the
-    exact label scale matters for your use.
+    It replaces siRNAEfficacyDB's copy of the same panel, which is corrupt:
+    all 44 of that file's `Lamin A` rows are byte-identical copies of this
+    panel's B1 (`GAGCUCCUGCAGGUCCUCCuu` / `GGAGGACCUGCAGGAGCUC`, 83.0%, same
+    cell, dose and timepoint). Every other duplex in that file appears
+    exactly once, so this is a defect in one block of the primary source, not
+    a replicate-measurement pattern: rows that should hold B2-B44 hold B1's
+    sequence and B1's label. Those 44 rows are dropped in favour of this
+    source -- `load_records()` wires up that supersession.
+
+    LABEL: `% Inhibition` as reported, i.e. **protein-level** knockdown in
+    HeLa, not the mRNA-level %inhibition most of this corpus carries. The
+    distribution matches Harborth's own abstract ("26 of 44 tested standard
+    21-nt siRNA duplexes reduced the protein expression by at least 90%"):
+    25 rows here are >=90 and 1 is below 50, the one-row difference being a
+    boundary/rounding call in the abstract's own count.
+
+    Accession: the paper (and Ichihara's table) cite `AH001498`, a segmented
+    GenBank gene record; only 42 of the 44 sense strands locate in it, while
+    all 44 locate in the RefSeq mRNA `NM_170707`, so the records carry
+    `NM_170707` and the raw CSV keeps the table's own accession as
+    `Source_Accession`. Both strands come from the raw table (not derived by
+    revcomp), and were cross-checked: `Antisense_21mer[:19]` is the exact
+    reverse complement of `Sense_19mer` for all 44 rows.
     """
     data_dir = data_dir or DATA_DIR
-    csv_path = data_dir / "REMOVED"
-    fasta_path = data_dir / "REMOVED_transcripts.fasta"
+    csv_path = data_dir / "harborth2003_extra.csv"
+    fasta_path = data_dir / "harborth2003_transcripts.fasta"
     if not csv_path.exists() or not fasta_path.exists():
         return []
 
@@ -440,27 +458,169 @@ def _load_REMOVED_records(flank_nt: int, data_dir: Path | None = None) -> list[S
     transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
 
     records: list[SiRNARecord] = []
-    for i, row in df.iterrows():
-        sense = row["Sequence"].upper()
-        guide_seq = _revcomp(sense)
+    for _, row in df.iterrows():
+        guide_seq = str(row["Antisense_21mer"]).upper()
+        sense = _dna_to_rna(row["Sense_19mer"])
         transcript = transcripts.get(row["Accession_number"])
         mrna_window, window_site_start, has_flanking_context = _locate_window(
             sense, transcript, flank_nt
         )
         records.append(
             SiRNARecord(
-                row_id=f"REMOVED_row{i}",
+                row_id=f"harborth2003_{row['Compound_Name']}",
                 gene=row["Gene"],
                 accession=row["Accession_number"],
                 guide_seq=guide_seq,
-                duplex_len=len(guide_seq),
+                duplex_len=min(19, len(guide_seq)),  # 19nt core + 2nt overhang
                 mrna_window=mrna_window,
                 site_start=window_site_start,
                 site_len=len(sense),
                 has_flanking_context=has_flanking_context,
                 label=float(row["Pct_Inhibition"]),
-                technology="Reporter/qPCR knockdown assay (REMOVED training compilation)",
-                source=f"REMOVED_{row['Source_Paper']}",
+                technology=(
+                    f"Lamin A/C protein knockdown by immunoblot/immunofluorescence "
+                    f"({row['Cell']}; Harborth et al. 2003, via Ichihara et al. 2007)"
+                ),
+                source="Harborth2003",
+            )
+        )
+    return records
+
+
+SCIABOLA2013_CORE_LEN = 19  # duplex core; the extra 2 bases are the 3' overhang
+# Table S4's four screened doses, in ascending order. Which of them a row
+# has depends on the gene (see _load_sciabola2013_records's LABEL note).
+SCIABOLA2013_DOSE_COLUMNS = (
+    "Pct_Inhibition_008nM",  # 0.08 nM
+    "Pct_Inhibition_04nM",  # 0.4 nM
+    "Pct_Inhibition_2nM",  # 2 nM
+    "Pct_Inhibition_10nM",  # 10 nM
+)
+
+
+def _load_sciabola2013_records(
+    flank_nt: int,
+    existing_sequences: frozenset[str] = frozenset(),
+    data_dir: Path | None = None,
+) -> list[SiRNARecord]:
+    """Sciabola et al. 2013 (Nucleic Acids Research 41(3):1383-1394,
+    doi:10.1093/nar/gks1191, PMC3561943 -- **CC BY-NC 3.0**) Supplementary
+    Tables S3 + S4: the paper's OWN in-house panel of 21-nt siRNAs
+    ("19p2" designs, 19nt duplex core + 2nt target-matching 3' overhangs)
+    against ten hepatocellular-carcinoma-relevant genes, with the real
+    reported % inhibition at every dose screened.
+
+    Assay (quoted from the paper's Methods): "Hep3B cells (American Type
+    Culture Collection) were grown in EMEM (ATCC) supplemented with 10%
+    fetal calf serum", transfected with Lipofectamine RNAiMAX at 0.08-10
+    nM, and "QuantiGene 2.0 assay (Affymetrix Inc. Santa Clara, CA) was
+    used to measure the expression level of target genes before and after
+    knockdown in Hep3B cell lines" 48 h post-transfection. So every row
+    here is mRNA-level knockdown in Hep3B.
+
+    LABEL -- read this before comparing labels across genes. Table S4
+    reports each duplex at up to four doses, and which doses exist differs
+    by gene: HIF1A/HK2 at 0.08/0.4/2/10 nM, HPSE at 0.08/0.4/2 nM (the
+    paper stopped at 2 nM for HPSE -- "the hit rate was high enough at 2 nM
+    to not require a higher concentration"), and the seven follow-up genes
+    (BIRC5, EZH2, MTOR, MYC, BRAF, CTNNB1, PIK3CA) at 10 nM only. `label`
+    is the MEAN of the doses present for that row, so it is a
+    dose-averaged potency for HIF1A/HK2/HPSE but a single 10 nM reading for
+    the follow-up genes -- NOT an apples-to-apples quantity across genes,
+    and systematically lower than a top-dose-only label for the three
+    tiled genes. Every individual dose is shipped verbatim in
+    `data/raw/sciabola2013_extra.csv`
+    (`Pct_Inhibition_{008,04,2,10}nM`), so a caller
+    wanting single-dose labels can use those columns directly instead.
+    Negative values are the source's own (measured expression above
+    untreated control), kept as reported.
+
+    Sequences: Table S3's `19p2_seq` column mixes strand orientations --
+    333 of the 361 rows are the antisense (guide) strand and 23 are the
+    sense strand, verified one row at a time by testing both orientations
+    against the real NCBI RefSeq transcript. `Sense_21mer` in the raw CSV
+    is the normalized sense/target strand (so this loader behaves like
+    every other one here: store sense, derive `guide_seq` by revcomp), with
+    the table's own string and the orientation it turned out to be kept
+    alongside as `Table_S3_Sequence` / `Table_S3_Strand` for traceability
+    back to the paper.
+
+    Gene labels are normalized to current official symbols so they group
+    with the rest of this corpus rather than fragmenting it (`HIF1a` ->
+    `HIF1A`, `SURVIVIN` -> `BIRC5`, `c-Myc` -> `MYC`, `FRAP1` -> `MTOR`,
+    `bRAF` -> `BRAF`); the table's own spelling is preserved per row as
+    `Source_Gene_Label`.
+
+    Dropped at extraction time: 5 of the 361 rows (2 HK2, 3 HPSE) whose
+    sequence could not be located in either orientation in the gene's
+    RefSeq transcript, nor in the variants checked (6-8 mismatches at the
+    best alignment, i.e. not a transcription typo) -- the same
+    verify-or-drop rule every other source here follows. One HPSE row
+    (`19p2_244`) locates only in HPSE transcript variant `NM_001098540.3`
+    and carries that accession instead of `NM_006665.6`.
+
+    See data/DATA_SOURCES.md for the license notice, how the supplementary
+    file was obtained, and the full extraction writeup.
+    """
+    data_dir = data_dir or DATA_DIR
+    csv_path = data_dir / "sciabola2013_extra.csv"
+    fasta_path = data_dir / "sciabola2013_transcripts.fasta"
+    if not csv_path.exists() or not fasta_path.exists():
+        return []
+
+    df = pd.read_csv(csv_path)
+    transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
+
+    records: list[SiRNARecord] = []
+    for _, row in df.iterrows():
+        sense = str(row["Sense_21mer"]).upper()
+        guide_seq = _revcomp(sense)
+        if guide_seq in existing_sequences or sense in existing_sequences:
+            continue
+
+        # label = mean of the doses this row actually has (see the LABEL
+        # note above); every individual dose stays in the raw CSV.
+        doses = [
+            float(row[column])
+            for column in SCIABOLA2013_DOSE_COLUMNS
+            if pd.notna(row[column])
+        ]
+        if not doses:
+            continue
+
+        transcript = transcripts.get(row["Accession_number"])
+        site = sense
+        mrna_window, window_site_start, has_flanking_context = _locate_window(
+            sense, transcript, flank_nt
+        )
+        if not has_flanking_context:
+            # A duplex whose 2nt overhang isn't target-derived: locate the
+            # 19nt core instead (1 row in the shipped file), falling back to
+            # duplex-only context if that misses too.
+            core = sense[-SCIABOLA2013_CORE_LEN:]
+            core_window, core_start, core_found = _locate_window(core, transcript, flank_nt)
+            if core_found:
+                site = core
+                mrna_window, window_site_start, has_flanking_context = (
+                    core_window, core_start, True )
+
+        records.append(
+            SiRNARecord(
+                row_id=f"sciabola2013_{row['Compound_Name']}",
+                gene=row["Gene"],
+                accession=row["Accession_number"],
+                guide_seq=guide_seq,
+                duplex_len=len(guide_seq),  # overhang length not separately modeled
+                mrna_window=mrna_window,
+                site_start=window_site_start,
+                site_len=len(site),
+                has_flanking_context=has_flanking_context,
+                label=sum(doses) / len(doses),
+                technology=(
+                    "QuantiGene 2.0 mRNA knockdown assay, Hep3B, 48h "
+                    f"(mean of {len(doses)} dose(s); Sciabola et al. 2013)"
+                ),
+                source="Sciabola2013",
             )
         )
     return records
@@ -962,11 +1122,12 @@ def load_records(
     flank_nt: int = FLANK_NT,
     data_dir: Path | str | None = None,
     include_sirna_efficacy: bool = True,
+    include_harborth2003: bool = True,
     include_monopoli: bool = True,
     include_REMOVED: bool = True,
     include_shabalina: bool = True,
     include_martinelli: bool = True,
-    include_REMOVED: bool = True,
+    include_sciabola2013: bool = True,
     include_cmsirnadb: bool = True,
     include_cmsirnadb_full: bool = True,
     include_davis2025: bool = True,
@@ -1031,8 +1192,23 @@ def load_records(
         return include_flag and (allowed is None or key in allowed)
 
     records: list[SiRNARecord] = []
+
+    # Harborth 2003's lamin A/C panel is resolved before anything else
+    # because two other sources carry second-hand copies of it: the primary
+    # source's `Lamin A` block is 44 byte-identical copies of one duplex,
+    # superseded gene-for-gene when this source loads -- see
+    # _load_harborth2003_records's docstring.
+    harborth2003_records: list[SiRNARecord] = []
+    harborth2003_genes: frozenset[str] = frozenset()
+    if wanted("harborth2003", include_harborth2003):
+        harborth2003_records = _load_harborth2003_records(flank_nt, resolved_dir)
+        harborth2003_genes = frozenset(r.gene for r in harborth2003_records)
+
     if wanted("sirna_efficacy", include_sirna_efficacy):
-        records += _load_sirnaefficacydb_records(csv_path, fasta_path, flank_nt)
+        records += _load_sirnaefficacydb_records(
+            csv_path, fasta_path, flank_nt, harborth2003_genes
+        )
+    records += harborth2003_records
     if wanted("monopoli", include_monopoli):
         records += _load_monopoli_records(flank_nt, resolved_dir)
     if wanted("REMOVED", include_REMOVED):
@@ -1041,8 +1217,11 @@ def load_records(
         records += _load_shabalina_records(flank_nt, resolved_dir)
     if wanted("martinelli", include_martinelli):
         records += _load_martinelli_records(flank_nt, resolved_dir)
-    if wanted("REMOVED", include_REMOVED):
-        records += _load_REMOVED_records(flank_nt, resolved_dir)
+    if wanted("sciabola2013", include_sciabola2013):
+        # Deduped against the sources above: its seven follow-up genes
+        # include MYC/CTNNB1/PIK3CA, which Shabalina2006 and CMsiRNAdb also
+        # cover, so only genuinely new duplexes are added.
+        records += _load_sciabola2013_records(flank_nt, _sequence_index(records), resolved_dir)
     if wanted("cmsirnadb", include_cmsirnadb):
         records += _load_cmsirnadb_records(flank_nt, resolved_dir)
     if wanted("cmsirnadb_full", include_cmsirnadb_full):

@@ -13,7 +13,7 @@ command that re-fetches it from its original sources. Any project that wants
 this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
-**Currently: 18,072 siRNA records across 113 genes** (`load_records()`
+**Currently: 18,085 siRNA records across 117 genes** (`load_records()`
 default). Every source is individually toggleable via its own `include_<data-source>`
 flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
 per-source breakdown and audit.
@@ -22,162 +22,168 @@ per-source breakdown and audit.
 
 | Source | Published | siRNAs | Genes | License |
 |---|---|---|---|---|
-| [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,532 | 41 | CC BY-NC |
+| [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,488 | 40 | CC BY-NC |
 | [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 | CC BY-NC-ND 4.0 |
 | Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 | CC BY 2.0 |
 | Martinelli / sirna-reproduction | 2023 | 577 | 12 | CC BY-NC 4.0 |
 | Davis, Monopoli et al. (NAR gkaf479) | 2025 | 966 | 4 | CC BY 4.0 |
 | Monopoli, Korkin & Khvorova | 2023 | 20 | 4 | CC BY 4.0 |
 | REMOVED panel (Xu, Zhao et al. / REMOVED) | 2024 | 8 | 1 | none stated -- unresolved[^lic] |
-| REMOVED repo (Sciabola 2013 + Harborth 2001) | 2013/2001 | 343 | 3 | none stated -- unresolved[^lic] |
-| **Total** | | **18,072** | **113** | |
+| [Sciabola et al. in-house panel](https://doi.org/10.1093/nar/gks1191) (NAR Supp. Tables S3/S4) | 2013 | 356 | 10 | CC BY-NC 3.0 |
+| [Harborth et al. lamin A/C panel](https://doi.org/10.1093/nar/gkm699) (via Ichihara et al. 2007) | 2003 | 44 | 1 | CC BY-NC 2.0 UK |
+| **Total** | | **18,085** | **117** | |
 
 "Published" is the year of the paper/database each source comes from, not
 when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
 for full citations, license terms, and how each source's data was verified.
 "Genes" is how many distinct genes/reporters that source contributes to this
 dataset; some genes (e.g. `APP`, `MAPT`) are covered by more than one
-source, so the per-source counts don't sum to the 113 total. CMsiRNAdb's
+source, so the per-source counts don't sum to the 117 total. CMsiRNAdb's
 count combines its PCSK9 subset and the other-12-genes addition (same
 underlying paper) -- see the gene-level table below for the split. Davis
 2025 and Monopoli 2023 are from the same lab and cover the same 4 genes
 (`APP`/`MAPT`/`BACE1`/`SNCA`) -- Davis 2025's 966 is already net of
 deduping against Monopoli 2023 and CMsiRNAdb (full) by exact sequence.
 
-[^lic]: These two repos ship no `LICENSE` file, so they are
-    all-rights-reserved by default under GitHub's terms. Their derivative
-    files are kept locally but excluded from git -- see
-    [`NOTICE.md`](NOTICE.md). "CC BY-NC-ND" means no derivatives may be
+[^lic]: The REMOVED repo ships no `LICENSE` file, so it is
+    all-rights-reserved by default under GitHub's terms. Its derivative file
+    is kept locally but excluded from git -- see [`NOTICE.md`](NOTICE.md).
+    "CC BY-NC-ND" means no derivatives may be
     redistributed, which is why only CMsiRNAdb's untouched original TSV is
     committed and its per-gene subsets are derived at load time.
 
 ## Genes in this dataset
 
-All 113 genes currently in `load_records()`'s default output, the source
+All 117 genes currently in `load_records()`'s default output, the source
 dataset(s) each came from, how many siRNA records target that gene, and the
-length of the real mRNA/GenBank transcript its target sites were located in.
+length of the real mRNA/GenBank transcript its target sites were located in,
+and the cell line(s) it was tested in.
 Computed directly from the fetched `data/raw/` files, not hand-maintained --
 for genes with more than one distinct transcript accession across records
 (marked [^multi]), the length shown is for the one used by the most records.
 
 <details>
-<summary>Show all 113 genes</summary>
+<summary>Show all 117 genes</summary>
 
-| Gene | Source dataset | siRNAs | Transcript length (nt) |
-|---|---|---|---|
-| ACP5 | Martinelli 2023 / sirna-reproduction | 32 | 1,683 |
-| AGT | CMsiRNAdb (full) | 872 | 2,148 [^multi] |
-| AKT1 | Shabalina 2006 | 5 | 3,008 |
-| AKT2 | Shabalina 2006 | 4 | 5,250 |
-| ALPG | Shabalina 2006 | 11 | 2,492 |
-| ANGPTL3 | CMsiRNAdb (full) | 551 | 2,926 [^multi] |
-| APOB | Martinelli 2023 / sirna-reproduction | 34 | 14,121 |
-| APP | CMsiRNAdb (full) + Monopoli 2023 + Davis 2025 | 1,244 | 3,358 [^multi] |
-| BACE1 | Monopoli 2023 + Davis 2025 | 183 | 5,835 |
-| C6orf110 | siRNAEfficacyDB | 145 | 3,465 |
-| Cacnb1 | siRNAEfficacyDB | 46 | 3,393 |
-| CASR_rhesus | Martinelli 2023 / sirna-reproduction | 68 | 3,144 |
-| CBL | Shabalina 2006 | 5 | 11,168 |
-| CBLB | Shabalina 2006 | 5 | 3,354 |
-| CDC34 | siRNAEfficacyDB | 57 | 1,418 |
-| CDKN1A | Shabalina 2006 | 5 | 2,117 |
-| CDKN1B | Martinelli 2023 / sirna-reproduction | 60 | 2,410 |
-| CSK | Shabalina 2006 | 5 | 2,743 |
-| CTNNB1 | CMsiRNAdb (full) | 352 | 3,488 |
-| Cyclophilin B | siRNAEfficacyDB | 90 | 851 |
-| DAD1 | Shabalina 2006 | 5 | 684 |
-| DBI | siRNAEfficacyDB | 9 | 675 |
-| EGFP | Martinelli 2023 / sirna-reproduction | 74 | 1,470 |
-| EGFP[^egfp2] | siRNAEfficacyDB | 702 | N/A [^egfp] |
-| EIF4EBP1 | Shabalina 2006 | 4 | 827 |
-| F3_human | Shabalina 2006 | 14 | 2,104 |
-| F3_mouse | Shabalina 2006 | 10 | 1,821 |
-| Firefly luciferase | siRNAEfficacyDB | 87 | 2,387 |
-| FireflyLuc | siRNAEfficacyDB | 46 | 2,387 [^multi] |
-| FLJ11011 | siRNAEfficacyDB | 78 | 8,412 |
-| FLJ16071 | Shabalina 2006 | 14 | 2,773 |
-| FOXO1 | Shabalina 2006 | 5 | 5,779 |
-| FOXO4 | Shabalina 2006 | 5 | 3,644 |
-| Fxyd6 | siRNAEfficacyDB | 72 | 1,766 |
-| FYN | Shabalina 2006 | 5 | 3,628 |
-| GAPDH | siRNAEfficacyDB | 20 | 1,285 |
-| GSK3A | Shabalina 2006 | 5 | 2,193 |
-| GSK3B | Shabalina 2006 | 5 | 7,782 |
-| HIF1A | REMOVED repo (Sciabola 2013) | 100 | 3,946 |
-| HIP2 | siRNAEfficacyDB | 79 | 5,153 |
-| HK2 | REMOVED repo (Sciabola 2013) | 95 | 5,624 |
-| HPSE | REMOVED repo (Sciabola 2013) | 105 | 4,669 |
-| HRAS | Shabalina 2006 | 10 | 570 |
-| HSD17B13 | CMsiRNAdb (full) | 1,985 | 2,260 [^multi] |
-| HSPC150 | siRNAEfficacyDB | 77 | 878 |
-| ICAM-1 | siRNAEfficacyDB | 40 | 2,986 |
-| IGF1R | Shabalina 2006 | 21 | 12,235 |
-| ILK | Shabalina 2006 | 5 | 1,759 |
-| INHBE | CMsiRNAdb (full) | 670 | 2,460 [^multi] |
-| IRS1 | Shabalina 2006 | 5 | 9,771 |
-| ITGB1 | Shabalina 2006 | 5 | 3,735 |
-| KAZRIN | Martinelli 2023 / sirna-reproduction | 39 | 2,641 |
-| Lamin A | siRNAEfficacyDB + REMOVED repo (Harborth 2001) | 87 | 9,756 [^multi] |
-| LPA | CMsiRNAdb (full) | 556 | 6,431 [^multi] |
-| Luciferase_firefly | Martinelli 2023 / sirna-reproduction | 122 | 6,047 [^multi] |
-| Luciferase_renilla | Martinelli 2023 / sirna-reproduction | 43 | 1,969 |
-| LYPD1 | Shabalina 2006 | 14 | 3,458 |
-| MAPK14 | Shabalina 2006 | 8 | 4,222 |
-| MAPT | CMsiRNAdb (full) + Monopoli 2023 + Davis 2025 | 917 | 6,816 [^multi] |
-| MARC1 | CMsiRNAdb (full) | 823 | 1,020 [^multi] |
-| MIR155HG | Martinelli 2023 / sirna-reproduction | 42 | 1,500 |
-| MMAC1 | siRNAEfficacyDB | 36 | 3,160 |
-| Mmp7 | siRNAEfficacyDB | 150 | 1,043 |
-| MSTN | CMsiRNAdb (full) | 9 | 2,705 [^multi] |
-| MYC | Shabalina 2006 | 5 | 3,721 |
-| MyoD | Shabalina 2006 | 5 | 1,833 |
-| NOG | siRNAEfficacyDB | 71 | 1,913 |
-| NPY | Martinelli 2023 / sirna-reproduction | 8 | 567 |
-| P2rx2 | siRNAEfficacyDB | 77 | 1,833 |
-| P2RX3 | siRNAEfficacyDB | 90 | 3,792 |
-| PAC | Shabalina 2006 | 10 | 906 |
-| PCSK9 | CMsiRNAdb (PCSK9) | 2,756 | 3,637 |
-| REMOVED | REMOVED REMOVED panel (Xu/Zhao 2024) | 8 | 2,097 |
-| PDPK1 | Shabalina 2006 | 5 | 7,184 |
-| PIK3CA | Shabalina 2006 | 5 | 9,259 |
-| PIK3R1 | Shabalina 2006 | 5 | 3,371 |
-| PIK3R2 | Shabalina 2006 | 5 | 3,980 |
-| PLK | siRNAEfficacyDB | 10 | 2,123 |
-| PLN | CMsiRNAdb (full) | 135 | 2,480 |
-| PNPLA3 | CMsiRNAdb (full) | 2,066 | 2,753 [^multi] |
-| PSKH1 | Shabalina 2006 | 4 | 3,460 |
-| RAB13 | Shabalina 2006 | 5 | 1,164 |
-| RAB6IP1 | siRNAEfficacyDB | 126 | 4,991 |
-| RB1 | Shabalina 2006 | 5 | 4,768 |
-| RPS6 | Shabalina 2006 | 5 | 1,369 |
-| RPS6KA1 | Shabalina 2006 | 5 | 3,192 |
-| RPS6KA3 | Shabalina 2006 | 5 | 7,987 |
-| SEAP | siRNAEfficacyDB | 17 | 2,754 [^multi] |
-| SEPTIN2 | Shabalina 2006 | 5 | 3,251 |
-| SKP1 | Shabalina 2006 | 5 | 2,616 |
-| SNCA | Monopoli 2023 + Davis 2025 | 224 | 3,177 |
-| SOD2_chimp | Martinelli 2023 / sirna-reproduction | 51 | 600 |
-| SOST | siRNAEfficacyDB | 75 | 2,296 |
-| TC10 | siRNAEfficacyDB | 67 | 4,780 |
-| TCAP | siRNAEfficacyDB | 144 | 1,532 |
-| TSC1 | Shabalina 2006 | 5 | 8,598 |
-| TSC2 | Shabalina 2006 | 5 | 6,415 |
-| UBE2B | siRNAEfficacyDB | 79 | 2,241 |
-| UBE2C | siRNAEfficacyDB | 76 | 777 |
-| UBE2D3 | siRNAEfficacyDB | 78 | 3,976 |
-| UBE2E3 | siRNAEfficacyDB | 79 | 1,555 |
-| UBE2G1 | siRNAEfficacyDB | 79 | 4,167 |
-| UBE2H | siRNAEfficacyDB | 70 | 5,162 |
-| UBE2I | siRNAEfficacyDB | 64 | 2,850 |
-| UBE2J1 | siRNAEfficacyDB | 49 | 4,164 |
-| UBE2L3 | siRNAEfficacyDB | 53 | 2,861 |
-| UBE2L6 | siRNAEfficacyDB | 72 | 1,219 |
-| UBE2M | siRNAEfficacyDB | 76 | 1,159 |
-| UBE2N | siRNAEfficacyDB | 79 | 4,877 |
-| UBE2S | siRNAEfficacyDB | 79 | 2,559 |
-| UBE2V1 | siRNAEfficacyDB | 74 | 2,539 |
-| Ufc1 | siRNAEfficacyDB | 70 | 888 |
-| VEGFA | Martinelli 2023 / sirna-reproduction | 4 | 3,660 |
+| Gene | Source dataset | siRNAs | Transcript length (nt) | Cell line / test system [^cells] |
+|---|---|---|---|---|
+| ACP5 | Martinelli 2023 / sirna-reproduction | 32 | 1,683 | not recorded |
+| AGT | CMsiRNAdb (full) | 872 | 2,148 [^multi] | Hep3B (638), HepG2 (98), transgenic mice (in vivo) (60), +6 more |
+| AKT1 | Shabalina 2006 | 5 | 3,008 | not recorded |
+| AKT2 | Shabalina 2006 | 4 | 5,250 | not recorded |
+| ALPG | Shabalina 2006 | 11 | 2,492 | not recorded |
+| ANGPTL3 | CMsiRNAdb (full) | 551 | 2,926 [^multi] | Hep3B (222), primary cyno hepatocytes (184), transgenic mice (in vivo) (96), +6 more |
+| APOB | Martinelli 2023 / sirna-reproduction | 34 | 14,121 | not recorded |
+| APP | CMsiRNAdb (full) + Davis 2025 + Monopoli 2023 | 1,244 | 3,358 [^multi] | BE(2)-C (353), SH-SY5Y (284), primary cyno hepatocytes (269), +5 more |
+| BACE1 | Davis 2025 + Monopoli 2023 | 183 | 5,835 | SH-SY5Y (180), not recorded (3) |
+| BIRC5 | Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 9 | 2,574 | Hep3B |
+| BRAF | Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 5 | 6,459 | Hep3B |
+| C6orf110 | siRNAEfficacyDB | 145 | 3,465 | HeLa |
+| Cacnb1 | siRNAEfficacyDB | 46 | 3,393 | HeLa |
+| CASR_rhesus | Martinelli 2023 / sirna-reproduction | 68 | 3,144 | not recorded |
+| CBL | Shabalina 2006 | 5 | 11,168 | not recorded |
+| CBLB | Shabalina 2006 | 5 | 3,354 | not recorded |
+| CDC34 | siRNAEfficacyDB | 57 | 1,418 | HeLa |
+| CDKN1A | Shabalina 2006 | 5 | 2,117 | not recorded |
+| CDKN1B | Martinelli 2023 / sirna-reproduction | 60 | 2,410 | not recorded |
+| CSK | Shabalina 2006 | 5 | 2,743 | not recorded |
+| CTNNB1 | CMsiRNAdb (full) + Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 357 | 3,488 [^multi] | Hep3B (350), HeLa (7) |
+| Cyclophilin B | siRNAEfficacyDB | 90 | 851 | HEK293 |
+| DAD1 | Shabalina 2006 | 5 | 684 | not recorded |
+| DBI | siRNAEfficacyDB | 9 | 675 | HEK293 |
+| EGFP | Martinelli 2023 / sirna-reproduction | 74 | 1,470 | not recorded |
+| EGFP[^egfp2] | siRNAEfficacyDB | 702 | N/A [^egfp] | HeLa |
+| EIF4EBP1 | Shabalina 2006 | 4 | 827 | not recorded |
+| EZH2 | Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 9 | 2,654 | Hep3B |
+| F3_human | Shabalina 2006 | 14 | 2,104 | not recorded |
+| F3_mouse | Shabalina 2006 | 10 | 1,821 | not recorded |
+| Firefly luciferase | siRNAEfficacyDB | 87 | 2,387 | HEK293 |
+| FireflyLuc | siRNAEfficacyDB | 46 | 2,387 [^multi] | avg. of CHO-K1/HeLa/E14TG2a (37), HEK293 (9) |
+| FLJ11011 | siRNAEfficacyDB | 78 | 8,412 | HeLa |
+| FLJ16071 | Shabalina 2006 | 14 | 2,773 | not recorded |
+| FOXO1 | Shabalina 2006 | 5 | 5,779 | not recorded |
+| FOXO4 | Shabalina 2006 | 5 | 3,644 | not recorded |
+| Fxyd6 | siRNAEfficacyDB | 72 | 1,766 | HeLa |
+| FYN | Shabalina 2006 | 5 | 3,628 | not recorded |
+| GAPDH | siRNAEfficacyDB | 20 | 1,285 | HEK293 |
+| GSK3A | Shabalina 2006 | 5 | 2,193 | not recorded |
+| GSK3B | Shabalina 2006 | 5 | 7,782 | not recorded |
+| HIF1A | Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 100 | 3,946 | Hep3B |
+| HIP2 | siRNAEfficacyDB | 79 | 5,153 | HeLa |
+| HK2 | Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 97 | 5,626 | Hep3B |
+| HPSE | Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 107 | 4,652 [^multi] | Hep3B |
+| HRAS | Shabalina 2006 | 10 | 570 | not recorded |
+| HSD17B13 | CMsiRNAdb (full) | 1,985 | 2,260 [^multi] | COS7 (639), primary human hepatocytes (549), primary cyno hepatocytes (476), +7 more |
+| HSPC150 | siRNAEfficacyDB | 77 | 878 | HeLa |
+| ICAM-1 | siRNAEfficacyDB | 40 | 2,986 | T24 |
+| IGF1R | Shabalina 2006 | 21 | 12,235 | not recorded |
+| ILK | Shabalina 2006 | 5 | 1,759 | not recorded |
+| INHBE | CMsiRNAdb (full) | 670 | 2,460 [^multi] | Hep3B (595), primary cyno hepatocytes (75) |
+| IRS1 | Shabalina 2006 | 5 | 9,771 | not recorded |
+| ITGB1 | Shabalina 2006 | 5 | 3,735 | not recorded |
+| KAZRIN | Martinelli 2023 / sirna-reproduction | 39 | 2,641 | not recorded |
+| Lamin A | Harborth 2003 (via Ichihara 2007) | 44 | 3,178 | HeLa |
+| LPA | CMsiRNAdb (full) | 556 | 6,431 [^multi] | Huh7 (376), Hep3B (111), transgenic mice (in vivo) (56), +1 more |
+| Luciferase_firefly | Martinelli 2023 / sirna-reproduction | 122 | 6,047 [^multi] | not recorded |
+| Luciferase_renilla | Martinelli 2023 / sirna-reproduction | 43 | 1,969 | not recorded |
+| LYPD1 | Shabalina 2006 | 14 | 3,458 | not recorded |
+| MAPK14 | Shabalina 2006 | 8 | 4,222 | not recorded |
+| MAPT | CMsiRNAdb (full) + Davis 2025 + Monopoli 2023 | 917 | 6,816 [^multi] | T98G (379), SH-SY5Y (292), BE(2)-C (213), +4 more |
+| MARC1 | CMsiRNAdb (full) | 823 | 1,020 [^multi] | Hep3B (341), Huh7 (259), transgenic mice (in vivo) (174), +3 more |
+| MIR155HG | Martinelli 2023 / sirna-reproduction | 42 | 1,500 | not recorded |
+| MMAC1 | siRNAEfficacyDB | 36 | 3,160 | T24 |
+| Mmp7 | siRNAEfficacyDB | 150 | 1,043 | HeLa |
+| MSTN | CMsiRNAdb (full) | 9 | 2,705 [^multi] | CD-1 mouse muscle (in vivo) (2), Hepa1-6 (2), chicken embryo myoblasts (2), +2 more |
+| MTOR | Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 10 | 8,721 | Hep3B |
+| MYC | Sciabola 2013 in-house panel (NAR Supp. S3/S4) + Shabalina 2006 | 14 | 3,721 | Hep3B (9), not recorded (5) |
+| MyoD | Shabalina 2006 | 5 | 1,833 | not recorded |
+| NOG | siRNAEfficacyDB | 71 | 1,913 | HeLa |
+| NPY | Martinelli 2023 / sirna-reproduction | 8 | 567 | not recorded |
+| P2rx2 | siRNAEfficacyDB | 77 | 1,833 | HeLa |
+| P2RX3 | siRNAEfficacyDB | 90 | 3,792 | HeLa |
+| PAC | Shabalina 2006 | 10 | 906 | not recorded |
+| PCSK9 | CMsiRNAdb (PCSK9) | 2,756 | 3,637 | HeLa (1,825), HepG2 (379), HEK293A (258), +4 more |
+| REMOVED | REMOVED REMOVED panel (Xu/Zhao 2024) | 8 | 2,097 | not recorded |
+| PDPK1 | Shabalina 2006 | 5 | 7,184 | not recorded |
+| PIK3CA | Shabalina 2006 + Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 10 | 9,259 | not recorded (5), Hep3B (5) |
+| PIK3R1 | Shabalina 2006 | 5 | 3,371 | not recorded |
+| PIK3R2 | Shabalina 2006 | 5 | 3,980 | not recorded |
+| PLK | siRNAEfficacyDB | 10 | 2,123 | HEK293 |
+| PLN | CMsiRNAdb (full) | 135 | 2,480 | Hepa1-6 |
+| PNPLA3 | CMsiRNAdb (full) | 2,066 | 2,753 [^multi] | Hep3B (680), COS7 (624), primary cyno hepatocytes (298), +6 more |
+| PSKH1 | Shabalina 2006 | 4 | 3,460 | not recorded |
+| RAB13 | Shabalina 2006 | 5 | 1,164 | not recorded |
+| RAB6IP1 | siRNAEfficacyDB | 126 | 4,991 | HeLa |
+| RB1 | Shabalina 2006 | 5 | 4,768 | not recorded |
+| RPS6 | Shabalina 2006 | 5 | 1,369 | not recorded |
+| RPS6KA1 | Shabalina 2006 | 5 | 3,192 | not recorded |
+| RPS6KA3 | Shabalina 2006 | 5 | 7,987 | not recorded |
+| SEAP | siRNAEfficacyDB | 17 | 2,754 [^multi] | HEK293 |
+| SEPTIN2 | Shabalina 2006 | 5 | 3,251 | not recorded |
+| SKP1 | Shabalina 2006 | 5 | 2,616 | not recorded |
+| SNCA | Davis 2025 + Monopoli 2023 | 224 | 3,177 | SH-SY5Y (220), not recorded (4) |
+| SOD2_chimp | Martinelli 2023 / sirna-reproduction | 51 | 600 | not recorded |
+| SOST | siRNAEfficacyDB | 75 | 2,296 | HeLa |
+| TC10 | siRNAEfficacyDB | 67 | 4,780 | HeLa |
+| TCAP | siRNAEfficacyDB | 144 | 1,532 | HeLa |
+| TSC1 | Shabalina 2006 | 5 | 8,598 | not recorded |
+| TSC2 | Shabalina 2006 | 5 | 6,415 | not recorded |
+| UBE2B | siRNAEfficacyDB | 79 | 2,241 | HeLa |
+| UBE2C | siRNAEfficacyDB | 76 | 777 | HeLa |
+| UBE2D3 | siRNAEfficacyDB | 78 | 3,976 | HeLa |
+| UBE2E3 | siRNAEfficacyDB | 79 | 1,555 | HeLa |
+| UBE2G1 | siRNAEfficacyDB | 79 | 4,167 | HeLa |
+| UBE2H | siRNAEfficacyDB | 70 | 5,162 | HeLa |
+| UBE2I | siRNAEfficacyDB | 64 | 2,850 | HeLa |
+| UBE2J1 | siRNAEfficacyDB | 49 | 4,164 | HeLa |
+| UBE2L3 | siRNAEfficacyDB | 53 | 2,861 | HeLa |
+| UBE2L6 | siRNAEfficacyDB | 72 | 1,219 | HeLa |
+| UBE2M | siRNAEfficacyDB | 76 | 1,159 | HeLa |
+| UBE2N | siRNAEfficacyDB | 79 | 4,877 | HeLa |
+| UBE2S | siRNAEfficacyDB | 79 | 2,559 | HeLa |
+| UBE2V1 | siRNAEfficacyDB | 74 | 2,539 | HeLa |
+| Ufc1 | siRNAEfficacyDB | 70 | 888 | HeLa |
+| VEGFA | Martinelli 2023 / sirna-reproduction | 4 | 3,660 | not recorded |
 
 </details>
 
@@ -203,6 +209,21 @@ own `Gene` column has a trailing space (`"EGFP "`) -- a pre-existing
 data-entry quirk in that source, not introduced by adding Martinelli. They
 group separately here and in `load_records()` because that's how the raw
 gene strings actually compare, not silently merged.
+
+[^cells]: The cell line (or in vivo model) each gene's knockdown was measured
+in, taken from the raw data wherever the source records it:
+siRNAEfficacyDB's `Cell` column and CMsiRNAdb's `Cell_Type` column (names
+lightly normalized, e.g. `Hela` -> `HeLa`, `Be(2)C cell line` -> `BE(2)-C`;
+"in vivo" marks animal-model rows). Davis 2025 rows are listed as SH-SY5Y,
+the cell line that paper's native assay was run in (see
+[`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)). Sciabola 2013's rows are
+Hep3B (QuantiGene 2.0 mRNA, 48 h) and the Harborth 2003 lamin-A/C panel is
+HeLa (lamin A/C protein by immunoblot) -- both from those papers' own
+Methods rather than a column in the data. Shabalina 2006, Martinelli 2023, Monopoli 2023 and the REMOVED panel
+don't include a cell-line field in the data shipped here and their papers
+weren't checked for this column, so their rows show "not recorded" rather
+than a value guessed at. Where a gene was tested in more
+than one system, the top three are shown with their siRNA counts.
 
 ## License
 
@@ -259,6 +280,8 @@ tests/
   test_raw_loader.py          unit tests for raw_loader.py (fixtures, no real data needed)
   test_genes.py               unit tests for genes.py
   test_licenses.py            unit tests for licenses.py (incl. registry/loader sync check)
+  test_sciabola2013.py        unit tests for the Sciabola 2013 loader
+  test_harborth2003.py        unit tests for the Harborth 2003 loader + its supersede rule
   test_ncbi_fetch.py          unit tests for ncbi_fetch.py (mocked HTTP calls)
   test_fetch_cli.py           unit tests for fetch/cli.py
   test_sequence_utils.py      unit tests for sequence_utils.py
@@ -272,8 +295,8 @@ tests/
 ```
 
 Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
-dataset, where it came from, and the bottom-line audit (7,505 trainable
-records across 103 genes, 7 sources — 18,072 records / 113 genes if the
+dataset, where it came from, and the bottom-line audit (7,518 trainable
+records across 108 genes, 8 sources — 18,085 records / 117 genes if the
 optional CMsiRNAdb full-database retrieval and Davis2025 are also
 included). Primary source is **siRNAEfficacyDB** (Zhang et al. 2024, CC
 BY-NC); see the docs for the rest and their individual license terms
@@ -313,7 +336,12 @@ export SIRNA_DATA_DIR=./my_data
 ```
 
 `sirna-data-fetch --only sirna_efficacy monopoli` fetches a subset instead of
-all four sources; see `sirna-data-fetch --help`.
+all nine sources; see `sirna-data-fetch --help`. **Every source
+`load_records()` reads has a fetcher**, so a bare `pip install` plus one
+fetch reconstructs the whole dataset quoted at the top of this file --
+nothing here depends on having the git checkout.
+`tests/test_fetch_coverage.py` enforces that: adding a loadable source
+without a fetcher fails the suite.
 
 ### From a git checkout
 
@@ -360,7 +388,8 @@ transcript.accession, transcript.sequence
 
 `load_records()` takes `include_sirna_efficacy` / `include_monopoli` /
 `include_REMOVED` / `include_shabalina` / `include_martinelli` /
-`include_cmsirnadb` / `include_cmsirnadb_full` / `include_davis2025` flags
+`include_harborth2003` / `include_sciabola2013` / `include_cmsirnadb` /
+`include_cmsirnadb_full` / `include_davis2025` flags
 (all default `True`) to include or exclude any individual source.
 
 `data_dir` (a `Path` or `str`) points every source at a specific directory of
@@ -373,8 +402,8 @@ default relative `data/raw/` location, in that order.
 ```python
 from sirna_data import list_genes, describe_genes
 
-list_genes()          # ['ACP5', 'AGT', 'AKT1', ...] -- all 113, sorted
-len(list_genes())     # 113
+list_genes()          # ['ACP5', 'AGT', 'AKT1', ...] -- all 117, sorted
+len(list_genes())     # 117
 
 # same thing with per-gene detail:
 for info in describe_genes():
@@ -407,7 +436,7 @@ own list of `include_*` flags:
 from sirna_data import load_records, list_licenses, list_sources, license_for_source
 
 list_licenses()
-# ['CC BY 2.0', 'CC BY 4.0', 'CC BY-NC', 'CC BY-NC 4.0', 'CC BY-NC-ND 4.0', 'unresolved']
+# ['CC BY 2.0', 'CC BY 4.0', 'CC BY-NC', 'CC BY-NC 2.0 UK', 'CC BY-NC 3.0', 'CC BY-NC 4.0', 'CC BY-NC-ND 4.0', 'unresolved']
 
 # only the permissively-licensed sources (Shabalina 2006, Monopoli 2023, Davis 2025):
 records = load_records(licenses=["CC BY 4.0", "CC BY 2.0"])

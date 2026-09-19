@@ -15,10 +15,11 @@ Most useful contributions, roughly in order:
 2. **Data-quality findings.** A mis-mapped accession, a mislabeled gene, a
    duplicate that slipped past dedup. See [Reporting a data
    problem](#reporting-a-data-problem).
-3. **Resolving an unresolved license.** Two sources (the REMOVED panel and
-   the REMOVED repo) ship no `LICENSE` file, so they are
-   all-rights-reserved by default and their derivative files are kept out
-   of git. If you can get an explicit license statement from those
+3. **Resolving an unresolved license.** One source (the REMOVED panel)
+   ships no `LICENSE` file, so it is all-rights-reserved by default and its
+   derivative file is kept out of git. Another route works too: when the
+   same measurements exist in an open-access paper, sourcing them from there
+   beats chasing permission. If you can get an explicit license statement from those
    authors, that is a genuinely valuable contribution -- open an issue
    with the correspondence.
 4. **Loader, splitting, and docs improvements.**
@@ -42,11 +43,11 @@ original sources with:
 sirna-data-fetch --dest data/raw
 ```
 
-Requires network access to `cellknowledge.com.cn` and NCBI E-utilities. Note
-that `sirna-data-fetch` currently covers four of the loadable sources
-(`sirna_efficacy`, `monopoli`, `shabalina`, `cmsirnadb`); the others are
-loaded from files in `data/raw/` that do not yet have a fetcher. Closing
-that gap is itself a welcome contribution.
+Requires network access to `cellknowledge.com.cn`, Europe PMC, GitHub raw
+and NCBI E-utilities. `sirna-data-fetch` covers every loadable source, so a
+bare `pip install` reconstructs the full dataset;
+`tests/test_fetch_coverage.py` fails if a source is added without a
+fetcher, which is the check that keeps the README's totals honest.
 
 ## Running the checks
 
@@ -136,7 +137,7 @@ without an API key), and write only files that are meant to persist.
   conversion.
 - `source` is a stable provenance string (e.g. `"Davis2025"`). Use a
   `_`-suffixed discriminator when one source file contains several
-  underlying studies (`REMOVED_Sciabola2013`); `license_for_source`
+  underlying studies (`"<registered source>_<study>"`); `license_for_source`
   resolves those by prefix.
 - Chemical modification fields stay at their defaults unless the raw data
   carries real annotation. `sense_modifications` /

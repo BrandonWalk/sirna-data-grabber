@@ -16,7 +16,17 @@ import argparse
 import os
 from pathlib import Path
 
-from . import cmsirnadb, monopoli, shabalina, sirna_efficacy
+from . import (
+    cmsirnadb,
+    davis2025,
+    harborth2003,
+    martinelli,
+    monopoli,
+    REMOVED,
+    sciabola2013,
+    shabalina,
+    sirna_efficacy,
+)
 
 # Order matters only for display; each fetcher is independent.
 SOURCES = {
@@ -24,6 +34,11 @@ SOURCES = {
     "monopoli": monopoli.fetch,
     "shabalina": shabalina.fetch,
     "cmsirnadb": cmsirnadb.fetch,
+    "sciabola2013": sciabola2013.fetch,
+    "harborth2003": harborth2003.fetch,
+    "martinelli": martinelli.fetch,
+    "REMOVED": REMOVED.fetch,
+    "davis2025": davis2025.fetch,
 }
 
 
@@ -50,7 +65,7 @@ def main() -> None:
         nargs="+",
         choices=sorted(SOURCES),
         metavar="SOURCE",
-        help=f"Fetch only these sources instead of all four ({', '.join(sorted(SOURCES))}).",
+        help=f"Fetch only these sources instead of all nine ({', '.join(sorted(SOURCES))}).",
     )
     args = parser.parse_args()
 

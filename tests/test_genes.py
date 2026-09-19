@@ -20,9 +20,12 @@ FIXTURE_GENES = [
     "GENED",  # Shabalina2006
     "GENEE",  # Davis2025 (2 rows)
     "GENEF",  # CMsiRNAdb_full
+    "LAMGENE",  # Harborth2003 (2 rows)
     "MARTGENE",  # Martinelli (2 rows)
     "PCSK9",  # CMsiRNAdb
     "REMOVED",  # REMOVED_REMOVED
+    "SCIAGENE",  # Sciabola2013 (2 rows)
+    "SCIAGENE2",  # Sciabola2013 (unlocatable accession)
 ]
 
 

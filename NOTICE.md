@@ -27,9 +27,10 @@ this file — it is a convenience, not legal advice.
 |---|---|---|---|
 | siRNAEfficacyDB (Zhang et al. 2024) | `sirna_efficacy.csv` | CC BY-NC | **No** — non-commercial only |
 | Monopoli et al. 2023 | `monopoli_extra.csv` | CC BY 4.0 | Yes, with attribution |
-| REMOVED panel (Xu/Zhao et al. 2024, REMOVED repo) | `REMOVED` | **Unresolved — no LICENSE file in the source repo, paper not confirmed open-access.** Committed at the user's explicit request despite this; see below. | Unclear — do not assume |
+| REMOVED panel (Xu/Zhao et al. 2024, REMOVED repo) | `REMOVED` | **Unresolved — no LICENSE file in the source repo, paper not confirmed open-access.** Kept locally but excluded from git (`.gitignore`); see below. | Unclear — do not assume |
 | Shabalina et al. 2006 | `shabalina_extra.csv` | CC BY 2.0 | Yes, with attribution |
-| REMOVED repo (Sciabola et al. 2013 + Harborth et al. 2001) | `REMOVED` | **Unresolved — no LICENSE file in the source repo.** | Unclear — do not assume |
+| Harborth et al. 2003 lamin A/C panel, via Ichihara et al. 2007 (NAR supplement) | `harborth2003_extra.csv` | **CC BY-NC 2.0 UK** — Ichihara 2007's terms (Harborth 2003 itself is not open access and carries no reuse license; these values come from Ichihara's republication). Cite both papers. | No — non-commercial only |
+| Sciabola et al. 2013 in-house panel (NAR Supp. Tables S3/S4) | `sciabola2013_extra.csv` | **CC BY-NC 3.0** — the article's own stated terms; attribution required, derivatives allowed. | No — non-commercial only |
 | CMsiRNAdb (He et al. 2026) | `cmsirnadb_full_raw.tsv` | CC BY-NC-ND 4.0 | **No** — non-commercial only, and the "ND" term means only the original unmodified file may be redistributed (see below) |
 | Davis et al. 2025 (NAR gkaf479) | `davis2025_extra.csv` | CC BY 4.0 | Yes, with attribution |
 | NCBI RefSeq/GenBank transcripts | `*_transcripts.fasta` | Public domain | Yes, unrestricted |
@@ -40,10 +41,15 @@ its removal in `d2ad931`) — a real but non-canonical channel, and that repo
 carries no `LICENSE` file (all-rights-reserved by default). Loaded by
 `load_records()` when present locally (`include_REMOVED=True` by default,
 gracefully returns nothing if the file is absent). Unlike siRecords below,
-`REMOVED` **is committed to this repo** — at the user's explicit
-request, made and confirmed with the license gap called out beforehand. If
-you're relying on this data outside non-commercial research, verify
-redistribution rights directly with the REMOVED authors first; this
+`REMOVED` is **kept locally but excluded from git** (`.gitignore`),
+the same treatment siRecords gets. It was committed for a while at the
+user's explicit request, made with the license gap called out beforehand,
+and later untracked so the repo stops redistributing a file no license
+covers. Because there is no `sirna-data-fetch` fetcher for it, a fresh clone
+cannot reproduce this subset -- `load_records()` simply returns 8 fewer
+records (`include_REMOVED` gracefully no-ops when the file is absent). If you
+have the file and want to rely on this data outside non-commercial research,
+verify redistribution rights directly with the REMOVED authors first; this
 repo's own permissive (MIT) license does not extend to it. The companion
 transcript FASTA is pure NCBI RefSeq (public domain) and is committed
 normally. See `data/DATA_SOURCES.md`.

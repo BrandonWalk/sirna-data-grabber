@@ -58,7 +58,7 @@ class SourceLicense:
         unresolved.
     record_sources : the `SiRNARecord.source` values this source produces.
         A record's source may also be one of these with a `_`-suffixed
-        discriminator (`REMOVED` -> `REMOVED_Sciabola2013`), which
+        discriminator (e.g. a compilation split per original study), which
         `license_for_source` resolves by prefix.
     url : the source's own landing page/paper, where there is one.
     notes : the short caveat worth seeing next to the license id.
@@ -136,19 +136,34 @@ SOURCE_LICENSES: dict[str, SourceLicense] = {
             "data/DATA_SOURCES.md."
         ),
     ),
-    "REMOVED": SourceLicense(
-        key="REMOVED",
-        name="REMOVED repo (Sciabola et al. 2013 + Harborth et al. 2001)",
-        license_id=LICENSE_UNRESOLVED,
-        commercial_use=None,
-        derivatives_redistributable=None,
-        record_sources=("REMOVED",),
-        url="https://github.com/drugparadigm/REMOVED",
+    "harborth2003": SourceLicense(
+        key="harborth2003",
+        name="Harborth et al. 2003 lamin A/C panel (via Ichihara et al. 2007 NAR supplement)",
+        license_id="CC BY-NC 2.0 UK",
+        commercial_use=False,
+        derivatives_redistributable=True,
+        record_sources=("Harborth2003",),
+        url="https://doi.org/10.1093/nar/gkm699",
         notes=(
-            "No LICENSE file in the source repo (all-rights-reserved by "
-            "default). Its `label` column's scale is also undocumented -- "
-            "see _load_REMOVED_records's caveat before trusting the "
-            "labels quantitatively."
+            "Non-commercial only, attribution required. Harborth et al. 2003 "
+            "itself (Antisense Nucleic Acid Drug Dev., Liebert) is NOT open "
+            "access and carries no reuse license; these values come from "
+            "Ichihara et al. 2007's open-access republication of the panel, "
+            "whose terms are the ones stated here. Cite both."
+        ),
+    ),
+    "sciabola2013": SourceLicense(
+        key="sciabola2013",
+        name="Sciabola et al. 2013 in-house panel (NAR Supplementary Tables S3/S4)",
+        license_id="CC BY-NC 3.0",
+        commercial_use=False,
+        derivatives_redistributable=True,
+        record_sources=("Sciabola2013",),
+        url="https://doi.org/10.1093/nar/gks1191",
+        notes=(
+            "Non-commercial only, attribution required; the article's own "
+            "stated terms (CC BY-NC 3.0), which its supplementary data "
+            "rides on. See data/DATA_SOURCES.md."
         ),
     ),
     "cmsirnadb": SourceLicense(
@@ -259,10 +274,10 @@ def license_for_source(source: str) -> SourceLicense | None:
     produced, means a source was added without a registry entry -- the
     completeness test in tests/test_licenses.py exists to catch that).
 
-    Handles the discriminated sources too: `"REMOVED_Sciabola2013"` and
-    `"REMOVED_Harborth2001"` both resolve to the REMOVED entry, while
-    exact ids always win over a prefix (so `"CMsiRNAdb_full"` resolves to
-    its own entry rather than `"CMsiRNAdb"`'s).
+    Handles `_`-discriminated sources too -- `"<registered source>_<x>"`
+    resolves to that registered entry -- while exact ids always win over a
+    prefix (so `"CMsiRNAdb_full"` resolves to its own entry rather than
+    `"CMsiRNAdb"`'s).
     """
     for entry in SOURCE_LICENSES.values():
         if source in entry.record_sources:
