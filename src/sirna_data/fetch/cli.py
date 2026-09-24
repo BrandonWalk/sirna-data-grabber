@@ -30,12 +30,12 @@ from . import (
 # Order matters only for display; each fetcher is independent.
 SOURCES = {
     "sirna_efficacy": sirna_efficacy.fetch,
+    "martinelli": martinelli.fetch,
     "monopoli": monopoli.fetch,
     "shabalina": shabalina.fetch,
     "cmsirnadb": cmsirnadb.fetch,
     "sciabola2013": sciabola2013.fetch,
     "harborth2003": harborth2003.fetch,
-    "martinelli": martinelli.fetch,
     "davis2025": davis2025.fetch,
 }
 

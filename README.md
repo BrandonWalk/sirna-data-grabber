@@ -13,7 +13,7 @@ command that re-fetches it from its original sources. Any project that wants
 this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
-**Currently: 18,077 siRNA records across 116 genes** (`load_records()`
+Currently: 18,077 siRNA records across 116 genes (`load_records()`
 default). Every source is individually toggleable via its own `include_<data-source>`
 flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
 per-source breakdown and audit.
@@ -30,7 +30,7 @@ per-source breakdown and audit.
 | Monopoli, Korkin & Khvorova | 2023 | 20 | 4 | CC BY 4.0 |
 | [Sciabola et al. in-house panel](https://doi.org/10.1093/nar/gks1191) (NAR Supp. Tables S3/S4) | 2013 | 356 | 10 | CC BY-NC 3.0 |
 | [Harborth et al. lamin A/C panel](https://doi.org/10.1093/nar/gkm699) (via Ichihara et al. 2007) | 2003 | 44 | 1 | CC BY-NC 2.0 UK |
-| **Total** | | **18,077** | **116** | |
+| Total | | 18,077 | 116 | |
 
 "Published" is the year of the paper/database each source comes from, not
 when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
@@ -223,13 +223,13 @@ than one system, the top three are shown with their siRNA counts.
 
 ## License
 
-**The code in this repo (`sirna_data`, `tests/`) is MIT licensed** — see
+The code in this repo (`sirna_data`, `tests/`) is MIT licensed — see
 [`LICENSE`](LICENSE). Use it, modify it, ship it commercially, whatever you
 want.
 
-**The data in `data/raw/` is NOT covered by that license.** It's redistributed
+The data in `data/raw/` is NOT covered by that license. It's redistributed
 under each original source's own terms, and most of those sources are
-**non-commercial only** (CC BY-NC / CC BY-NC-ND). Loading the data with this
+non-commercial only (CC BY-NC / CC BY-NC-ND). Loading the data with this
 permissively-licensed code does not lift those restrictions — you still have
 to comply with them separately. See [`NOTICE.md`](NOTICE.md) for the
 per-source summary and [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for
@@ -293,7 +293,7 @@ Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
 dataset, where it came from, and the bottom-line audit (7,510 trainable
 records across 107 genes, 7 sources — 18,077 records / 116 genes if the
 optional CMsiRNAdb full-database retrieval and Davis2025 are also
-included). Primary source is **siRNAEfficacyDB** (Zhang et al. 2024, CC
+included). Primary source is siRNAEfficacyDB (Zhang et al. 2024, CC
 BY-NC); see the docs for the rest and their individual license terms
 before reusing this data outside this project.
 
@@ -331,8 +331,8 @@ export SIRNA_DATA_DIR=./my_data
 ```
 
 `sirna-data-fetch --only sirna_efficacy monopoli` fetches a subset instead of
-all nine sources; see `sirna-data-fetch --help`. **Every source
-`load_records()` reads has a fetcher**, so a bare `pip install` plus one
+all nine sources; see `sirna-data-fetch --help`. Every source
+`load_records()` reads has a fetcher, so a bare `pip install` plus one
 fetch reconstructs the whole dataset quoted at the top of this file --
 nothing here depends on having the git checkout.
 `tests/test_fetch_coverage.py` enforces that: adding a loadable source
