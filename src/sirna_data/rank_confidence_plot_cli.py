@@ -14,18 +14,18 @@ wraps:
 
 Examples:
 
-    # Compare three models' PCCs, top-5 capture, over a REMOVED-length
-    # transcript's ~4596 candidate sites, but only plot K up to 800:
-    sirna-rank-confidence-plot --pcc 0.3521 0.3686 0.3927 \\
-        --n-items 4596 --top-n 5 --k-max 800 \\
-        --labels "Model A" "Model B" "Best blend (40% Model A)" \\
+    # Compare three models' PCCs, top-5 capture, over a transcript with
+    # ~4000 candidate sites, but only plot K up to 800:
+    sirna-rank-confidence-plot --pcc 0.30 0.40 0.50 \\
+        --n-items 4000 --top-n 5 --k-max 800 \\
+        --labels "Model A" "Model B" "Model C" \\
         --save-path comparison.png
 
     # Single curve, full K range, default 60-point spacing:
-    sirna-rank-confidence-plot --pcc 0.3686 --n-items 4596 --save-path curve.png
+    sirna-rank-confidence-plot --pcc 0.40 --n-items 4000 --save-path curve.png
 
     # Plain lines, no per-point dots -- handy when --num-points is dense:
-    sirna-rank-confidence-plot --pcc 0.3686 --n-items 4596 --marker none \\
+    sirna-rank-confidence-plot --pcc 0.40 --n-items 4000 --marker none \\
         --save-path curve_lines.png
 """
 from __future__ import annotations

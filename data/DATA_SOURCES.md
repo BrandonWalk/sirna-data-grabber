@@ -4,9 +4,7 @@
 
 Audit of every siRNA-efficacy source integrated into this dataset: whether it provided
 trainable data (siRNA sequence paired with a numeric knockdown/efficacy value
-suitable for a regression/classification target), and how much. For the broader
-landscape of sources considered — including ones never obtained or not pursued
-further — see `POTENTIAL_DATA_SOURCES.md`.
+suitable for a regression/classification target), and how much.
 
 - `load_records()` returns 18,077 records across 116 genes by default, all
   with a numeric %-knockdown label.
@@ -26,11 +24,6 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
 | Sciabola et al. 2013 in-house panel (NAR Supp. Tables S3/S4) | 356 | +4 (BIRC5, EZH2, MTOR, BRAF; also re-sources HIF1A/HK2/HPSE and adds rows to MYC/CTNNB1/PIK3CA) | numeric %Inhibition (mean of the doses each row was screened at) | The paper's own Hep3B/QuantiGene 2.0 measurements, CC BY-NC 3.0. `sciabola2013_extra.csv`. |
 | Harborth et al. 2003 lamin A/C panel (via Ichihara et al. 2007) | 44 | +0 (replaces the corrupt `Lamin A` block in siRNAEfficacyDB) | numeric % Inhibition, protein-level (immunoblot, HeLa) | The real 44-duplex panel, from Ichihara 2007's CC BY-NC 2.0 UK republication. Supersedes both second-hand copies the corpus used to carry. `harborth2003_extra.csv`. |
 | TOTAL | 7,510 | 107 genes | — | — |
-
-### Obtained, not integrated
-
-| Source | Records | Why not trainable | Path to make it trainable |
-|---|---|---|---|
 
 ### Definition of "trainable" used here
 
@@ -52,12 +45,6 @@ either a different model formulation or converting the metric first.
   original authors and underlying studies.
 - Fetched by `sirna_data.fetch.sirna_efficacy` (`sirna-data-fetch`) into
   `data/raw/sirna_efficacy.csv`.
-
-We deliberately did NOT use the merged CSVs from the Model B GitHub repo
-(github.com/lulab/Model B), even though it bundles the same classic
-Huesken/Reynolds/Vickers/etc. benchmarks. That repo ships under a proprietary
-Tsinghua University license that prohibits redistribution and use in competing
-products, so its prepared data files are not safe to vendor into this project.
 
 ## Full-length mRNA transcripts: NCBI Nucleotide (RefSeq/GenBank)
 
@@ -96,20 +83,11 @@ products, so its prepared data files are not safe to vendor into this project.
   model of these modifications, so we fold them as if they were plain
   unmodified RNA — a real approximation whose accuracy on this chemistry is
   unverified. `technology="Dual-luciferase reporter assay (modified sdRNA)"`
-  falls into `graph_build.py`'s existing "other" one-hot bucket, which at
-  least lets the model separate this subset's systematic effects from the
-  other sources'.
+  is a non-specific tag, which at least lets a model separate this subset's
+  systematic effects from the other sources'.
 - Label conversion: the source reports "% reporter expression remaining"
   (lower = more potent); we store `label = 100 - reporter_remaining_pct` to
   match `%Inhibition`'s convention (higher = more knockdown).
-- We also identified Table S1 of the *primary* source (Shmushkovich et al.
-  2018, 356 siRNAs, same chemistry, also CC BY / open access, retrieved the
-  same way) but did not integrate it: that table has no gene-identity column
-  at all (only an internal compound ID), so it cannot be gene-grouped for
-  LOGO-CV and would only be usable as always-in-training augmentation data,
-  requiring pipeline support we haven't built. Left for a future iteration
-  if more training signal (as opposed to more evaluable genes) becomes the
-  priority.
 
 ## Supplementary siRNA data: Davis et al. 2025 (966 net-new rows after dedup, 0 new genes)
 
@@ -201,17 +179,6 @@ products, so its prepared data files are not safe to vendor into this project.
   `supplementaryFiles` REST API
   (`https://www.ebi.ac.uk/europepmc/webservices/rest/PMC1431570/supplementaryFiles`),
   same legitimate route as the Monopoli data above — not scraping.
-- We investigated this initially hoping to add the *Matveeva et al. 2007*
-  (PMID 17426130) 3336-siRNA compilation instead, but its only listed
-  download link (a University of Utah personal page) has been dead for
-  years, has no Wayback Machine snapshot, and isn't mirrored as journal
-  supplementary data; 3 of its 4 constituent source papers are fully
-  paywalled with no legitimate open copy anywhere we could find, and the 4th
-  (Jagla et al. 2005, Sloan-Kettering, obtained directly from the user) turned
-  out to never have published its per-siRNA sequence data at all — only
-  aggregate rule-level statistics. This Shabalina et al. 2006 dataset was
-  found while reading Matveeva's reference list; unlike Matveeva's, it is
-  open access with the actual data still retrievable.
 - Deduplication: this table is itself a compilation, and roughly half of
   its 653 rows turned out to be exact antisense-sequence duplicates of genes
   already in siRNAEfficacyDB (traced to the same underlying Khvorova et al.
@@ -242,8 +209,8 @@ products, so its prepared data files are not safe to vendor into this project.
   we store `label = 100 - Activ` to match `%Inhibition`.
 - No per-row assay/technology detail is given in the source table (unlike
   siRNAEfficacyDB), so all 269 rows are tagged
-  `technology="Heterogeneous compilation (Shabalina et al. 2006)"`, which
-  falls into `graph_build.py`'s existing "other" one-hot bucket.
+  `technology="Heterogeneous compilation (Shabalina et al. 2006)"`, a
+  non-specific tag rather than a named assay.
 - Target-site location: exact substring search of the derived sense sequence
   (reverse complement of the source's antisense 19-mer) against the fetched
   RefSeq/GenBank transcript, same as siRNAEfficacyDB. 266/269 (98.9%)
@@ -262,8 +229,7 @@ products, so its prepared data files are not safe to vendor into this project.
   table has no gene-identity column at all — only sequence, a per-molecule
   modification descriptor, `PCT` (%inhibition, already in this dataset's
   standard 0–100 convention), and a source PMID/patent ID. That alone made
-  it unusable for leave-one-gene-out CV (see `POTENTIAL_DATA_SOURCES.md`'s
-  original "not integrated" verdict). Rather than trust each source
+  it unusable for leave-one-gene-out CV. Rather than trust each source
   document's stated target from its abstract/title, every candidate
   gene/reporter assignment was confirmed computationally: the sense
   strand's first 19nt ("core", excluding each row's own 2nt 3' synthetic
@@ -347,49 +313,8 @@ products, so its prepared data files are not safe to vendor into this project.
   to duplex-only context. All 324 matches are forward-orientation (sense
   strand identical to the mRNA window, not its reverse complement) — no
   further sense/antisense correction needed, unlike pass 1's 28-row fix.
-- The remaining ~330 rows are NOT included and remain
-  unresolved:
-  - The single largest chunk (284 rows, ~86% of what's left) is the
-    remainder of patent US20120088815A1/EP2415869A1 (pass 2 above resolved
-    260 of the patent's 544 rows to 5 genes found in the patent's own
-    worked examples). The patent's own text says it tested "target genes
-    in table 1-182" via a luciferase-reporter assay; the fetched portion of
-    the document only reaches tables 1-51, so the genes covered by tables
-    52-182 remain unidentified — reaching them would need either full
-    access to the rest of this very large document or BLAST access,
-    neither available in this environment.
-  - PMID 16598842 (15 rows): not yet investigated (only found as a citation
-    in other papers' reference lists, not fetched directly — the paper's
-    full text sits behind an Elsevier paywall not reachable from this
-    environment).
-  - PMID 23820891 (6 rows), "5' Unlocked Nucleic Acid Modification Improves
-    siRNA Targeting" (Snead et al. 2013, PMC3732871): confirmed via full
-    text to target the HIV-1 transcript (an siRNA called "siH5", assayed
-    via strand-specific dual-luciferase reporter, not a genomic human
-    target) -- out of scope for this project's gene-symbol convention
-    without adding an HIV reference sequence, not pursued.
-  - PMID 22889374 (4 rows): confirmed via abstract to target Enterovirus 71
-    (EV71)'s 5'UTR -- a viral, not human, target; not pursued (would need a
-    viral genome reference).
-  - PMID 21141919 (4 rows) and PMID 22982308 (2 rows): both titled/abstracted
-    as anti-MDR1 (ABCB1) work and share a near-identical sequence across
-    both papers, but neither the sense field nor the antisense-reverse-
-    complement of any of these 6 rows matches human ABCB1 (NM_000927.5),
-    nor mouse Abcb1a (NM_011076) or Abcb1b (NM_011075) -- left unresolved;
-    the papers' own full text (not reachable from this environment) would
-    be needed to confirm the actual species/isoform/paralog.
-  - PMID 15653644 (2 rows), 25699137 (2 rows), 22260772 (2 rows): small
-    remainders in three papers otherwise resolved above (EGFP/Luciferase/
-    NPY/APOB). 15653644's own text confirms it also tested an siRNA
-    against the SARS-CoV genome (a 5th target the paper describes but
-    doesn't give in its own tables) -- almost certainly these 2 rows,
-    viral and out of scope, not pursued further. 25699137's and 22260772's
-    remaining sequences don't match any reference already fetched for this
-    project and their full text wasn't reachable this round.
-  - PMID 20005874 (3 rows): confirmed via abstract to target coxsackievirus
-    B3 -- viral, not pursued.
-  - A handful of smaller/single-row documents (~10 rows total) not yet
-    investigated: PMID 22895883, 17616127, 17539595, 23682837.
+- The remaining ~330 rows could not be resolved to a target gene and are
+  not loaded.
 - Both strands are taken directly from the source (except the 28
   sense-corrected rows above), not derived by reverse-complementing one
   from the other — unlike every other loader in this file, Martinelli's
@@ -723,11 +648,6 @@ products, so its prepared data files are not safe to vendor into this project.
   rest fall back to duplex-only context, same mechanism as every other source.
 - Records by gene: PNPLA3 2,066 / HSD17B13 1,985 / APP 952 / AGT 872 / MARC1 823 /
   INHBE 670 / MAPT 630 / LPA 556 / ANGPTL3 551 / CTNNB1 352 / PLN 135 / MSTN 9.
-- Also re-checked `siRNAEfficacyDB/download/siRNA_all.txt` (the canonical source of
-  the classic sets: Huesken 2005 x2,431, Katoh 2007 x702, Reynolds x244, Vickers x76,
-  Harborth x44, Ui-Tei x37, Khvorova x10 = 3,544 numeric rows) directly from
-  CMsiRNAdb's sister site — dedup showed only 12 new rows against `sirna_efficacy.csv`,
-  confirming nothing further to add from that source.
 - Trainability note: these are synthetic siRNA duplexes with directly-measured %
   inhibition — the same target quantity as this dataset's existing numeric-%KD data.
   This is a drop-in extension of the supervised set. Caveat: heavily chemically
@@ -804,10 +724,6 @@ Coverage, by source:
   describes one architecture applied uniformly to all 20 rows but doesn't
   give a per-position map the way CMsiRNAdb's raw table does --
   `sense_modifications`/`antisense_modifications` stay `None`.
-- Shmushkovich et al. 2018 (356, not integrated -- see
-  `POTENTIAL_DATA_SOURCES.md`) -- same chemistry class as Monopoli
-  (Monopoli's model was trained on it), but blocked from integration by
-  its own no-gene-identity problem, unrelated to modification data.
 - Martinelli 2023 / sirna-reproduction (577 of 907 rows integrated -- see the
   dedicated section above) -- a genuine per-siRNA (not per-position)
   modification-type column (e.g. "hexitol nucleic acid", "2-fluoro

@@ -250,7 +250,6 @@ data/
   DATA_SOURCES.md            full provenance, license terms, and trainable-data
                               audit for every source (including CMsiRNAdb full-
                               database retrieval)
-  POTENTIAL_DATA_SOURCES.md  landscape of sources investigated
   data_source_ledger.csv     machine-readable companion to DATA_SOURCES.md
 src/sirna_data/
   raw_loader.py               load + merge every source into SiRNARecord rows
