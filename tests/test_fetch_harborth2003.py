@@ -76,7 +76,7 @@ def test_fetch_writes_csv_and_fasta(tmp_path: Path, fake_workbook, no_network):
     assert [row["Compound_Name"] for row in rows] == ["B1", "B2"]
     first = rows[0]
     assert first["Gene"] == "Lamin A"
-    assert first["Accession_number"] == harborth2003.ACCESSION   # the RefSeq we locate in
+    assert first["Accession_number"] == harborth2003.ACCESSION   # the RefSeq located in
     assert first["Source_Accession"] == "AH001498"               # the paper's own accession
     assert first["Antisense_21mer"] == SENSE + "uu"              # both strands from the table
     assert first["Sense_19mer"] == SENSE

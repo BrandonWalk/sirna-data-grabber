@@ -37,7 +37,7 @@ CELL_LINE = "HeLa"  # from Harborth et al. 2003's Methods; not a column in the t
 # is what records carry (the cited accession is preserved per row).
 ACCESSION = "NM_170707"
 
-# Header labels in the workbook's first sheet -> our column names.
+# Header labels in the workbook's first sheet -> this module's column names.
 COLUMNS = {
     "Authors": "authors",
     "Gene": "gene",
@@ -66,7 +66,7 @@ def fetch_workbook() -> bytes:
 
 
 def parse_panel(workbook: bytes) -> list[dict[str, str | float | None]]:
-    """The 44 Harborth rows of the workbook, keyed by our column names."""
+    """The 44 Harborth rows of the workbook, keyed by this module's column names."""
     cells = _ole.xls_cells(workbook)
     grid: dict[int, dict[int, str | float]] = {}
     for (row, column), value in cells.items():

@@ -4,7 +4,7 @@ against 4 genes (APP, MAPT, BACE1, SNCA) not present in siRNAEfficacyDB.
 
 Retrieved via Europe PMC's public supplementaryFiles API (no bot-detection
 evasion involved -- see ../../../data/DATA_SOURCES.md for how this differs
-from the ThermoFisher catalog we declined to scrape).
+from the ThermoFisher catalog, which was not scraped).
 
 This is a distinct, smaller augmentation to siRNAEfficacyDB: different
 assay chemistry (cholesterol-conjugated, heavily 2'-F/2'-OMe/phosphorothioate

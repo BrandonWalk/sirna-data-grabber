@@ -66,7 +66,7 @@ either a different model formulation or converting the metric first.
 - Retrieved via Europe PMC's public `supplementaryFiles` REST API
   (`https://www.ebi.ac.uk/europepmc/webservices/rest/PMC10338369/supplementaryFiles`),
   a legitimate, documented bulk-access endpoint — not scraping, no bot-detection
-  involved. (Contrast with the ThermoFisher catalog we investigated and declined
+  involved. (Contrast with the ThermoFisher catalog investigated and declined
   to use: that required replaying stolen Akamai bot-mitigation tokens against
   an internal API, which their Terms of Use and `robots.txt` both prohibit.)
   The supplementary PDF (`mmc1.pdf`) was parsed with `pdftotext -layout`; the
@@ -80,13 +80,13 @@ either a different model formulation or converting the metric first.
   Acids Research, the dataset Monopoli's model was trained on). This is
   now flagged on every record (`is_modified=True`, `modification_chemistry`
   set -- see "Chemical modification data" below), but RNAfold still has no
-  model of these modifications, so we fold them as if they were plain
+  model of these modifications, so they are folded as if they were plain
   unmodified RNA — a real approximation whose accuracy on this chemistry is
   unverified. `technology="Dual-luciferase reporter assay (modified sdRNA)"`
   is a non-specific tag, which at least lets a model separate this subset's
   systematic effects from the other sources'.
 - Label conversion: the source reports "% reporter expression remaining"
-  (lower = more potent); we store `label = 100 - reporter_remaining_pct` to
+  (lower = more potent); `label = 100 - reporter_remaining_pct` is stored to
   match `%Inhibition`'s convention (higher = more knockdown).
 
 ## Supplementary siRNA data: Davis et al. 2025 (966 net-new rows after dedup, 0 new genes)
@@ -182,8 +182,8 @@ either a different model formulation or converting the metric first.
 - Deduplication: this table is itself a compilation, and roughly half of
   its 653 rows turned out to be exact antisense-sequence duplicates of genes
   already in siRNAEfficacyDB (traced to the same underlying Khvorova et al.
-  2003 and other classic assays siRNAEfficacyDB itself draws from). We kept
-  only the rows targeting genes absent from our existing 45-gene set: 269
+  2003 and other classic assays siRNAEfficacyDB itself draws from). Only
+  the rows targeting genes absent from the existing 45-gene set are kept: 269
   rows across 41 new genes, mostly Hsieh et al. 2004's PI3K-pathway siRNA
   library (`PTEN`/`TSC1`/`TSC2`/`AKT1`/`AKT2`/`IGF1R`/`MAPK14`/`GSK3A`/
   `GSK3B`/`MYC`/`RAB13`/`EIF4EBP1`/`CBL`/`CBLB`/`CSK`/`ILK`/`PIK3R1`/
@@ -206,7 +206,7 @@ either a different model formulation or converting the metric first.
     "SEAP", and "EGFP" already are in siRNAEfficacyDB.
 - Label conversion: the source's `Activ` column is % activity/expression
   remaining (lower = more potent, same convention as Monopoli's data above);
-  we store `label = 100 - Activ` to match `%Inhibition`.
+  `label = 100 - Activ` is stored to match `%Inhibition`.
 - No per-row assay/technology detail is given in the source table (unlike
   siRNAEfficacyDB), so all 269 rows are tagged
   `technology="Heterogeneous compilation (Shabalina et al. 2006)"`, a
@@ -534,7 +534,7 @@ either a different model formulation or converting the metric first.
 - He et al. 2026, *BMC Bioinformatics* 27:33, "CMsiRNAdb: a database of
   chemically modified siRNA silencing efficiency for nucleic acid drug
   design" (DOI 10.1186/s12859-025-06359-y). CC BY-NC-ND 4.0 -- unlike
-  every other source in this file, the "ND" (No Derivatives) term means we
+  every other source in this file, the "ND" (No Derivatives) term means this repo
   can redistribute the *original, unmodified* download but not a
   filtered/curated/collapsed adaptation of it. Built by the same research
   group as siRNAEfficacyDB (same `cellknowledge.com.cn`
@@ -550,7 +550,7 @@ either a different model formulation or converting the metric first.
   collapsing described below happens at *load time* in
   `src/sirna_data/raw_loader.py` (`_load_cmsirnadb_records`), not as a
   pre-computed file -- every caller reproduces their own local copy of the
-  derived data instead of downloading an adaptation from us. (The
+  derived data instead of downloading an adaptation from this repo. (The
   transcript FASTA these loaders also read is independently fetched from
   NCBI RefSeq -- public domain, not CMsiRNAdb material -- so that ships
   as-is.) Fetched by `sirna_data.fetch.cmsirnadb` (`sirna-data-fetch`) into
@@ -692,7 +692,7 @@ what was actually assayed.
   or `None` (confirmed unmodified/natural ribonucleotide) at each index,
   aligned 1:1 with the corresponding strand's stored sequence. The whole
   field is `None` (not a tuple of `None`s) when no per-position annotation
-  is available at all for that record -- distinct from "we checked, it's
+  is available at all for that record -- distinct from "checked, it's
   unmodified everywhere here".
 
 Coverage, by source:
@@ -775,5 +775,5 @@ Coverage, by source:
   not guaranteed to remain true indefinitely.
 - `%Inhibition` values are real experimental measurements and are noisy: the
   range in the raw data is roughly -27.8 to 134.1 (i.e., below 0% or above
-  100%), which is expected assay noise, not a bug. We do not clip these by
+  100%), which is expected assay noise, not a bug. These are not clipped by
   default; see `src/sirna_data/raw_loader.py` for an optional clip.

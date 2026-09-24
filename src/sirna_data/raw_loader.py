@@ -240,7 +240,7 @@ def _load_shabalina_records(flank_nt: int, data_dir: Path | None = None) -> list
     to the 269 rows (41 genes) targeting genes absent from siRNAEfficacyDB --
     see sirna_data.fetch.shabalina for how the kept/excluded genes
     were determined (roughly half of the 653 rows turned out to be
-    exact-sequence duplicates of genes we already have) and
+    exact-sequence duplicates of genes already present) and
     data/DATA_SOURCES.md for the full provenance and caveats.
     """
     data_dir = data_dir or DATA_DIR
@@ -582,7 +582,7 @@ def _load_sciabola2013_records(
 
 # --- CMsiRNAdb (He et al. 2026, BMC Bioinformatics) ------------------------
 #
-# CMsiRNAdb is CC BY-NC-ND 4.0. The "ND" (No Derivatives) term means we can
+# CMsiRNAdb is CC BY-NC-ND 4.0. The "ND" (No Derivatives) term means this repo can
 # redistribute the original, unmodified download, but NOT a filtered/
 # curated/collapsed adaptation of it -- so unlike every other source in this
 # file, there is no pre-made "cmsirnadb_*_extra.csv" shipped in data/raw/.
@@ -590,7 +590,7 @@ def _load_sciabola2013_records(
 # master, 43,153 rows across 13 genes) is the only CMsiRNAdb artifact this
 # repo ships, and the two loaders below do all filtering/collapsing here, in
 # code, at load time -- every caller reproduces their own local copy of the
-# derived data instead of downloading an adaptation from us. See
+# derived data instead of downloading an adaptation from this repo. See
 # data/DATA_SOURCES.md.
 #
 # (The two transcript FASTAs these loaders also read, cmsirnadb_transcripts
@@ -765,7 +765,7 @@ def _load_cmsirnadb_records(flank_nt: int, data_dir: Path | None = None) -> list
       -cap/lipid-conjugate chemistry, not just a "this source is modified"
       flag) are parsed and attached via `is_modified`/`modification_chemistry`
       /`sense_modifications`/`antisense_modifications` when a row's
-      annotation cleanly aligns with the sequence we located -- see
+      annotation cleanly aligns with the located sequence -- see
       `_cmsirnadb_align_modifications` and data/DATA_SOURCES.md.
     """
     data_dir = data_dir or DATA_DIR
@@ -854,7 +854,7 @@ def _load_cmsirnadb_full_records(
       noise-around-zero that produces small negative readings).
       `technology` is taken from one representative row's Cell_Type.
     - Sequence = the 19nt sense core (3' overhangs stripped), located
-      against the row's own stated-accession transcript where we have it
+      against the row's own stated-accession transcript where available
       fetched, else falls back to duplex-only context like every other
       source's unmapped rows.
     """

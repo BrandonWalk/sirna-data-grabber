@@ -107,7 +107,7 @@ article. Record the URL and the exact stated license id.
 
 2. Open an issue with the source, its size, its genes, the efficacy
 metric it reports, and what you found in step 1. This is where "is this
-worth integrating and may we redistribute it" gets settled.
+worth integrating, and may it be redistributed" gets settled.
 
 3. Write a fetcher at `src/sirna_data/fetch/<source>.py` exposing
 `fetch(dest: Path) -> None`, which downloads from the original location and

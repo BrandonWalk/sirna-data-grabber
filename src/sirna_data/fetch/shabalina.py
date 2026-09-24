@@ -7,10 +7,10 @@ Retrieved via Europe PMC's public supplementaryFiles API (same legitimate,
 documented bulk-access endpoint used for the Monopoli et al. 2023 data --
 see ../../../data/DATA_SOURCES.md), not scraping.
 
-We only keep rows targeting genes *not already present* in siRNAEfficacyDB:
+Only rows targeting genes *not already present* in siRNAEfficacyDB are kept:
 roughly half of the 653 rows (mostly from Khvorova
 et al. 2003 and a few other sources) turned out to be exact-sequence
-duplicates of genes we already have, confirmed by direct antisense-sequence
+duplicates of genes already present, confirmed by direct antisense-sequence
 matching against data/raw/sirna_efficacy.csv before this module was written.
 The gene->accession mapping and the handful of exclusions/corrections below
 were derived by hand from NCBI esummary/efetch lookups on each of the 52

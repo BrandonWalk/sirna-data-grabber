@@ -280,7 +280,7 @@ def test_cmsirnadb_parse_modification_types_length_mismatch():
 
 
 def test_cmsirnadb_align_modifications_slices_to_window():
-    # full raw strand is 5nt, but we only stored a 3nt core starting at
+    # full raw strand is 5nt, but only a 3nt core is stored, starting at
     # offset 1 -- the returned tuple should be sliced/aligned to that core.
     seq_full = "AACGU"
     field = "1*A || 2*2'-O-Methyladenosine || 3*C || 4*G || 5*U"

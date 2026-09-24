@@ -76,7 +76,7 @@ def fetch_workbook() -> bytes:
 
 
 def parse_table(workbook: bytes) -> list[dict[str, str]]:
-    """The filtered rows of Supplemental Table 1, keyed by our column names.
+    """The filtered rows of Supplemental Table 1, keyed by this module's column names.
 
     The sheet carries several title/legend rows above the real header, so the
     header is found by content rather than by a fixed row number.
