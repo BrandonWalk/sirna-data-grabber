@@ -22,7 +22,6 @@ from . import (
     harborth2003,
     martinelli,
     monopoli,
-    REMOVED,
     sciabola2013,
     shabalina,
     sirna_efficacy,
@@ -37,7 +36,6 @@ SOURCES = {
     "sciabola2013": sciabola2013.fetch,
     "harborth2003": harborth2003.fetch,
     "martinelli": martinelli.fetch,
-    "REMOVED": REMOVED.fetch,
     "davis2025": davis2025.fetch,
 }
 

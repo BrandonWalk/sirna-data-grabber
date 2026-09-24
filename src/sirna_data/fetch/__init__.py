@@ -15,8 +15,8 @@ standard library):
 
 This covers every source `load_records()` reads: siRNAEfficacyDB, Monopoli
 2023, Shabalina 2006, CMsiRNAdb (whose one raw TSV feeds both CMsiRNAdb
-loaders), Sciabola 2013, Harborth 2003 via Ichihara 2007, Martinelli 2023,
-the REMOVED panel and Davis 2025. `tests/test_fetch_coverage.py` fails if a
+loaders), Sciabola 2013, Harborth 2003 via Ichihara 2007, Martinelli 2023 and
+Davis 2025. `tests/test_fetch_coverage.py` fails if a
 loadable source is ever added without one. See
 ../../../data/DATA_SOURCES.md for full provenance/license notes per source,
 and NOTICE.md before using the fetched data commercially -- most of it is

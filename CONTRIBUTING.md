@@ -15,13 +15,11 @@ Most useful contributions, roughly in order:
 2. **Data-quality findings.** A mis-mapped accession, a mislabeled gene, a
    duplicate that slipped past dedup. See [Reporting a data
    problem](#reporting-a-data-problem).
-3. **Resolving an unresolved license.** One source (the REMOVED panel)
-   ships no `LICENSE` file, so it is all-rights-reserved by default and its
-   derivative file is kept out of git. Another route works too: when the
-   same measurements exist in an open-access paper, sourcing them from there
-   beats chasing permission. If you can get an explicit license statement from those
-   authors, that is a genuinely valuable contribution -- open an issue
-   with the correspondence.
+3. **Re-sourcing data from a better-licensed original.** When the same
+   measurements exist in an open-access paper, sourcing them from there
+   beats relying on a repo that ships no `LICENSE` file (which is
+   all-rights-reserved by default). Every source here now carries a license
+   that permits redistribution; keeping it that way is the goal.
 4. **Loader, splitting, and docs improvements.**
 
 ## Development setup

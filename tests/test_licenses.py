@@ -77,10 +77,9 @@ def test_no_derivatives_terms_are_flagged_as_such():
 # --------------------------------------------------------------------------
 
 
-def test_list_licenses_is_sorted_deduped_and_includes_unresolved():
+def test_list_licenses_is_sorted_and_deduped():
     licenses = list_licenses()
     assert licenses == sorted(set(licenses))
-    assert LICENSE_UNRESOLVED in licenses
     # both CMsiRNAdb entries share one license -> one entry, not two
     assert licenses.count("CC BY-NC-ND 4.0") == 1
 
@@ -139,8 +138,10 @@ def test_source_keys_for_licenses_never_includes_unresolved_implicitly():
         source_keys_for_licenses([lic for lic in list_licenses() if lic != LICENSE_UNRESOLVED])
     )
     assert not (selected & unresolved_keys)
-    # ...but is selectable when asked for explicitly.
-    assert set(source_keys_for_licenses([LICENSE_UNRESOLVED])) == unresolved_keys
+    # ...but is selectable when asked for explicitly. No source currently
+    # carries an unresolved license; this guard stays live for when one does.
+    if unresolved_keys:
+        assert set(source_keys_for_licenses([LICENSE_UNRESOLVED])) == unresolved_keys
 
 
 def test_source_keys_for_licenses_rejects_unknown_license():

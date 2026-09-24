@@ -12,11 +12,8 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
   numeric %-knockdown label. (18,085 records / 117 genes if the CMsiRNAdb full-database
   retrieval and Davis2025 below are also included — both on by default via
   `include_cmsirnadb_full=True` / `include_davis2025=True`; see their own sections.)
-- **8 sources** supply that headline 7,518; **siRNAEfficacyDB (3,532)** and the
+- **7 sources** supply that headline 7,510; **siRNAEfficacyDB (3,532)** and the
   **CMsiRNAdb PCSK9 subset (2,756)** are 84% of it.
-- **siRecords** was recovered (3,117 rated records, ~1,400 new gene accessions) but is
-  **NOT trainable as-is** — its label is a 4-level ordinal rating, not a numeric
-  percentage. See "Considered, not integrated: siRecords" below.
 - **Chemical modification data**: `SiRNARecord` carries `is_modified`/
   `modification_chemistry`/`sense_modifications`/`antisense_modifications` — see
   "Chemical modification data" below.
@@ -29,7 +26,6 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
 | **CMsiRNAdb — PCSK9 subset** (He 2026) | **2,756** | +1 | numeric inhibition | Patent-derived, chemically modified; derived at load time from `cmsirnadb_full_raw.tsv` (CC BY-NC-ND, no derivative file shipped). |
 | **Shabalina 2006** | **269** | +41 | numeric (100−Activity) | 269 new after dedup vs 653 in paper; `shabalina_extra.csv`. |
 | **Monopoli 2023** | **20** | +4 (APP/MAPT/BACE1/SNCA) | numeric (100−reporter) | Modified sdRNA; `monopoli_extra.csv`. |
-| **REMOVED panel (Xu/Zhao 2024, REMOVED)** | **8** | +1 (REMOVED) | numeric (qPCR knockdown %) | Recovered from deleted file in repo's git history, verified against NM_005018.3; license unresolved, so `REMOVED` is kept locally but excluded from git — see `NOTICE.md`. |
 | **Martinelli 2023 / sirna-reproduction** | **577** | +12 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA, KAZRIN, MIR155HG, CDKN1B, SOD2_chimp, CASR_rhesus) | numeric (PCT) | 577 of 907 rows resolved — 253 by source-document tracing, 324 more by brute-force sequence matching. See the section below. |
 | **Sciabola et al. 2013 in-house panel** (NAR Supp. Tables S3/S4) | **356** | +4 (BIRC5, EZH2, MTOR, BRAF; also re-sources HIF1A/HK2/HPSE and adds rows to MYC/CTNNB1/PIK3CA) | numeric %Inhibition (mean of the doses each row was screened at) | The paper's own Hep3B/QuantiGene 2.0 measurements, CC BY-NC 3.0. `sciabola2013_extra.csv`. |
 | **Harborth et al. 2003 lamin A/C panel** (via Ichihara et al. 2007) | **44** | +0 (replaces the corrupt `Lamin A` block in the primary source) | numeric % Inhibition, **protein-level** (immunoblot, HeLa) | The real 44-duplex panel, from Ichihara 2007's CC BY-NC 2.0 UK republication. Supersedes both second-hand copies the corpus used to carry. `harborth2003_extra.csv`. |
@@ -39,13 +35,12 @@ further — see `POTENTIAL_DATA_SOURCES.md`.
 
 | Source | Records | Why not trainable | Path to make it trainable |
 |---|---|---|---|
-| **siRecords** (05 release) | 3,295 new by seq / 3,117 rated | Efficacy is **ordinal** (Very high/High/Medium/Low), not numeric %. Also: redistribution rights unresolved — see `NOTICE.md` and the dedicated section below | Trace the per-record PubMed IDs to primary papers and extract reported %KD |
 
 ### Definition of "trainable" used here
 
 A record is trainable here if it pairs an siRNA **sequence** with a **numeric**
 knockdown/inhibition value (continuous %), suitable as a regression or classification
-target. Ordinal ratings (siRecords) and other proxy metrics are excluded on that
+target. Ordinal ratings and other proxy metrics are excluded on that
 definition even though they encode efficacy information — using them would require
 either a different model formulation or converting the metric first.
 
@@ -199,61 +194,6 @@ products, so its prepared data files are not safe to vendor into this project.
   (966 more measurements) on 4 genes this dataset already had only sparse
   coverage of, not breadth.
 
-## Supplementary siRNA data: REMOVED panel (Xu, Zhao et al. 2024 / REMOVED)
-
-- Xu, Xu, Xie, Zhao, Yu & Feng 2024, *GENE*, "BERT-siRNA: siRNA target
-  prediction based on BERT pre-trained interpretable model" (DOI
-  10.1016/j.gene.2024.148330), and the associated code repo
-  github.com/REMOVED/REMOVED.
-- 8 siRNAs against `REMOVED` (PD-1, the immune-checkpoint gene) with a
-  dual-readout luciferase-reporter + qPCR knockdown efficiency for each —
-  the only source in this dataset with real, gene-identified, numeric
-  efficacy data for REMOVED. +1 gene (97 → **98 genes**) for
-  leave-one-gene-out CV.
-- **Recovery**: the repo's own `data/ExperimentalData/REMOVED_8.csv` was
-  deleted from `main` (commit `d2ad931`, "Delete data/ExperimentalData
-  directory") but is still present in the parent commit `f3254ee` — pulled
-  from there via `raw.githubusercontent.com/REMOVED/REMOVED/f3254ee/
-  data/ExperimentalData/REMOVED_8.csv`, not from the current `main` tree. A
-  sibling file in the same deleted directory, `Covid19.csv` (11 candidate
-  SARS-CoV-2-targeting siRNA sequences), was also recovered but has **no
-  efficacy/label column at all** in the committed version — despite the
-  repo's own `TestExperimentalData.py` code expecting one (`values[:,4]`) —
-  so it is not usable as trainable data and was not integrated.
-- **Verification**: all 8 sense-strand sequences were confirmed by exact
-  substring match against the real NCBI RefSeq `NM_005018.3` (human REMOVED)
-  mRNA transcript before being trusted — not assumed from the file's own
-  column labels.
-- Label: the source gives both a luciferase-reporter efficiency and a qPCR
-  efficiency per row (both already expressed as 0–1 fractional knockdown,
-  e.g. `0.972747`); we store `label = 100 * Efficiency_QPCR` (mRNA-level,
-  matching this dataset's dominant `%Inhibition` convention) and keep the
-  luciferase value alongside as `Efficiency_LUC_Pct` for reference.
-- **License caveat, unresolved — the file is gitignored**: unlike every
-  other source in this file, the REMOVED repo
-  ships no `LICENSE` file (all-rights-reserved by default under GitHub's
-  terms), and the associated *GENE* (Elsevier) paper is not confirmed
-  open-access. This is the same situation as siRecords below: obtained
-  from a real but non-canonical channel (deleted-file git history rather
-  than a publisher-sanctioned download). The gap was raised and the user
-  chose to commit `data/raw/REMOVED` regardless; it has since been
-  untracked, so the file is kept locally but excluded from git
-  (`.gitignore`), matching what `NOTICE.md` always said. There is no
-  fetcher for it, so a fresh clone cannot reproduce these 8 rows —
-  `load_records()` just returns 8 fewer records. The
-  transcript FASTA (`REMOVED`) is pure NCBI RefSeq (public
-  domain) and is committed as normal.
-- Fetched by `sirna_data.fetch.REMOVED` (`sirna-data-fetch`) from the pinned
-  parent commit on `raw.githubusercontent.com` into `data/raw/REMOVED`
-  and `data/raw/REMOVED`; loaded by `_load_REMOVED_records` in
-  `src/sirna_data/raw_loader.py`. Having a fetcher is what makes the
-  unresolved license workable: the file is gitignored, so this repo never
-  redistributes it, and each user fetches their own copy knowingly. The
-  upstream CSV's header labels are undocumented, so the fetcher identifies
-  columns by content (the sequence by its alphabet, the two efficiency
-  columns by being numeric) and refuses to write anything unless it parses
-  exactly 8 rows whose sequences are all present in `NM_005018`.
-
 ## Supplementary siRNA data: Shabalina, Spiridonov & Ogurtsov 2006
 
 - Shabalina, Spiridonov & Ogurtsov 2006, *BMC Bioinformatics* 7:65,
@@ -320,8 +260,8 @@ products, so its prepared data files are not safe to vendor into this project.
 
 - Martinelli 2023, bioRxiv preprint / `sirna-reproduction` (siRNAmod-derived
   reproduction dataset). 907 chemically-modified siRNAs pooled from 30
-  source PMIDs/patents, kept locally (gitignored, not redistributed) at
-  `data/raw/sirna_reproduction_martinelli_907.csv` — see `NOTICE.md`.
+  source PMIDs/patents; only the 577 rows whose targets could be confirmed
+  are integrated here.
 - **The blocker and how it was resolved**: as originally obtained, this
   table has no gene-identity column at all — only sequence, a per-molecule
   modification descriptor, `PCT` (%inhibition, already in this dataset's
@@ -500,8 +440,7 @@ products, so its prepared data files are not safe to vendor into this project.
   reference sequences above, 7 from pass 1 plus 6 from pass 2). **License**:
   the source `sirna-reproduction` dataset is CC BY-NC 4.0, which — unlike
   CMsiRNAdb's CC BY-NC-ND — permits derivatives, so this filtered/
-  gene-annotated subset is committed to the repo like Monopoli/Shabalina,
-  not gitignored like REMOVED/siRecords.
+  gene-annotated subset is committed to the repo like Monopoli/Shabalina.
 
 ## Supplementary siRNA data: Harborth et al. 2003 lamin A/C panel (44 rows, via Ichihara et al. 2007)
 
@@ -612,8 +551,8 @@ products, so its prepared data files are not safe to vendor into this project.
   supplementaryFiles API and parses the Word tables directly, with no
   dependency beyond pandas and the standard library (see
   `sirna_data/fetch/_ole.py`). Verified: the fetcher reproduces the committed
-  `sciabola2013_extra.csv` row for row. A copy of the document is kept at
-  `data/gks1191_supplemental_files/Supplementary Tables S1-S4.doc`.
+  `sciabola2013_extra.csv` row for row, so no local copy of the source
+  document is kept in this repo.
 - **Rows**: Table S3/S4 list 361 21-mers -- HIF1A 100, HK2 99, HPSE 110, and
   seven follow-up genes at 5-10 each (MTOR/`FRAP1` 10, BIRC5/`SURVIVIN` 9,
   MYC/`c-Myc` 9, EZH2 9, BRAF/`bRAF` 5, CTNNB1 5, PIK3CA 5). 356 are
@@ -804,9 +743,8 @@ products, so its prepared data files are not safe to vendor into this project.
   sequence is advisable to avoid leakage. `technology` is tagged the same way as the
   PCSK9 subset: `"CMsiRNAdb patent-derived, chemically modified (<cell type>)"`.
 - **Files**: `data/raw/cmsirnadb_full_raw.tsv` (the full 43,153-row master; PCSK9 and
-  these 12 genes are both derived from it at load time), `data/raw/cmsirnadb_full_transcripts.fasta`
-  (34 mRNA transcripts, NCBI efetch), and `data/cmsirnadb_new_sirna.png` (%inhibition +
-  per-gene figure).
+  these 12 genes are both derived from it at load time) and `data/raw/cmsirnadb_full_transcripts.fasta`
+  (34 mRNA transcripts, NCBI efetch).
 - **Integration**: wired into `load_records()` via `include_cmsirnadb_full=True`
   (`src/sirna_data/raw_loader.py`, `_load_cmsirnadb_full_records()`), which builds a
   strand-agnostic index of every sequence already loaded from the other sources before
@@ -815,81 +753,6 @@ products, so its prepared data files are not safe to vendor into this project.
   records, +10 new genes: AGT ANGPTL3 CTNNB1 HSD17B13 INHBE LPA MARC1 MSTN PLN PNPLA3;
   APP & MAPT deepened). Anyone consuming this data with a cached/precomputed downstream
   representation (e.g. a graph cache) should rebuild it after pulling this update.
-
-## Considered, not integrated: siRecords (Ren/Gong 2006–09)
-
-- siRecords 04/28/05 release, retrieved from the Internet Archive (the live siRecords
-  servers at `sirecords.umn.edu`, `c1.accurascience.com`, and `sirecords.biolead.org`
-  are all defunct — HTTP 502).
-- **License status — do not treat as "open"**: siRecords' own definitive writeup, Ren
-  et al. 2009, *Nucleic Acids Research* 37 (Database issue) D146-D149, "siRecords: a
-  database of mammalian RNAi experiments and efficacies" (doi:10.1093/nar/gkn817), is
-  itself published under CC BY-NC 2.0 UK — but that license covers the *article*
-  (text/figures), not a grant to redistribute the underlying bulk dataset. The paper's
-  own DATA ACCESS section states the actual terms for the data itself: "The siRecords
-  web site is publicly accessible through the URL http://siRecords.umn.edu/siRecords.
-  Academic users can obtain a copy of the current release of the dataset by sending an
-  email" to the corresponding author — a controlled, individual-request distribution
-  model restricted to academic users, not a blanket open-data license. Separately, the
-  database's later mirror host, AccuraScience (`c1.accurascience.com/siRecords/`),
-  publishes a general Terms of Use for its site stating downloaded content is for
-  "personal non-commercial use" only and may not be redistributed "for any other
-  purpose whatsoever without the prior written permission" of AccuraScience. Neither of
-  those covers how this repo obtained the data: `sirecords_efficacy.csv` was recovered
-  from an Internet Archive snapshot of the live site, not through the authors'
-  sanctioned academic-request channel — so even the narrow "academic users, on request"
-  permission the original paper describes doesn't technically apply to this copy. Net
-  finding: siRecords' data was never established as freely redistributable, and there
-  is no license (CC or otherwise) that clearly covers bulk redistribution of it as done
-  here. Treat `sirecords_efficacy.csv` and `sirecords_new_only.csv` as **unresolved
-  license risk**, not merely "unverified" — see `NOTICE.md`. Both files are kept
-  locally but excluded from git (`.gitignore`), same as the REMOVED extra data above.
-- **Overlap methodology**: matching replicates this dataset's own dedup rule — exact
-  nucleotide-sequence identity, strand-agnostic. Every existing guide/target sequence
-  (from `sirna_efficacy.csv` antisense+sense columns, plus the Shabalina/Monopoli/
-  CMsiRNAdb extras) was normalised (U→T, uppercased) and indexed both as-is and as
-  reverse-complement, down to overlapping 19-mers. A siRecords sequence counts as
-  "already in this dataset" if it (or its reverse complement) shares a 19-mer with any
-  existing sequence; sequences shorter than 19 nt were tested as exact substrings.
-- **Headline** — of the 4,162 siRecords rows, 275 have no usable sequence (too short /
-  blank) and are excluded from the record-level comparison:
-
-  | Level | New | Already in this dataset | siRecords total (usable) |
-  |---|---|---|---|
-  | **siRNA records** (by exact sequence) | **3,295 (84.8%)** | 592 (15.2%) | 3,887 |
-  | **Unique sequences** | 2,901 (84.1%) | 550 (15.9%) | 3,451 |
-  | **Target-gene accessions** | 1,534 | 49 | 1,583 |
-
-  The 592 overlapping records trace to the existing sources exactly as expected —
-  siRNAEfficacyDB (primary) 446, Shabalina 2006 145, CMsiRNAdb 1 — because
-  siRNAEfficacyDB and Shabalina 2006 are themselves compilations of the same classic
-  mid-2000s assays (Huesken 2005, Reynolds, Khvorova, Vickers, Hsieh) that siRecords
-  aggregates, so the shared core overlaps.
-- **What is genuinely new — and the critical caveat**: 3,295 records (3,117 carrying
-  an efficacy rating), spanning ~1,400 new target-gene accessions, are not currently
-  in this dataset by sequence — on its face a large potential expansion of gene
-  coverage. However, this "new" data is **not directly train-ready**, for one decisive
-  reason: siRecords efficacy is a **4-level ORDINAL rating** (Very high / High /
-  Medium / Low), not a numeric `%Inhibition`. Every integrated source in this dataset
-  stores a continuous knockdown/inhibition percentage (a regression/
-  classification-ready target); siRecords does not provide per-record percentages,
-  only the coarse bin. The new-only rated breakdown is: Very high 1,145 · High 1,003 ·
-  Medium 485 · Low 484. To use the new siRecords records you would have to either (a)
-  train/evaluate on the ordinal label directly (a different target from the numeric
-  percentage this dataset otherwise provides), or (b) go back to the **PubMed IDs**
-  siRecords provides (present for essentially every row) and extract the reported
-  numeric knockdown from the primary papers — the same provenance-tracing approach
-  used elsewhere in this file (e.g. Martinelli 2023 above).
-- Secondary caveats: siRecords predates and overlaps the existing academic sources, so
-  the 15% that overlaps is redundant and should be dropped on integration; cell line /
-  assay / concentration metadata is present but formatted differently from this
-  dataset's schema and would need mapping to the `Technology` one-hot buckets used by
-  downstream feature engineering; sequence lengths are heterogeneous (12–64 nt; median
-  19) where the rest of this dataset assumes ~19–21-mers.
-- **Files**: `data/raw/sirecords_efficacy.csv` (full 4,162-record siRecords release,
-  all fields) and `data/raw/sirecords_new_only.csv` (the 3,295 records whose sequence
-  is not already in this dataset — 3,117 with an efficacy rating — the candidate
-  extension set, overlap already removed).
 
 ## External validation: five FDA-approved siRNA drug sequences (not training data)
 
@@ -1003,8 +866,8 @@ what was actually assayed.
   repo yet at all -- reconstructing its modification data would mean
   starting over from the source supplement, not just wiring up something
   already committed.
-- **Every other source** (siRNAEfficacyDB, Shabalina 2006, siRecords, REMOVED
-  panel) -- standard/unmodified synthetic siRNA; `is_modified=False` by
+- **Every other source** (siRNAEfficacyDB, Shabalina 2006) -- standard/
+  unmodified synthetic siRNA; `is_modified=False` by
   the schema's default, nothing to wire up.
 
 ## Known data-quality caveats (do not "fix" silently — filtered/flagged instead)

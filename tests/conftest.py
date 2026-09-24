@@ -21,7 +21,6 @@ RIGHT_FLANK = "CCCCC"
 SITES = {
     "primary": "ACGUACGUACGU",
     "monopoli": "GGGCCCGGGCCC",
-    "REMOVED": "CCGGAACCGGAA",
     "shabalina": "AAACCCGGGUUU",
 }
 
@@ -110,14 +109,6 @@ def fake_data_dir(tmp_path: Path) -> Path:
     )
     _write_fasta(
         data_dir / "monopoli_transcripts.fasta", {"ACC3": _transcript(SITES["monopoli"])}
-    )
-
-    (data_dir / "REMOVED").write_text(
-        "Experiment_ID,Sequence,Gene,Accession_number,Efficiency_LUC_Pct,Efficiency_QPCR_Pct\n"
-        f"163-1,{SITES['REMOVED']},REMOVED,NM_005018,97.0,96.5\n"
-    )
-    _write_fasta(
-        data_dir / "REMOVED", {"NM_005018": _transcript(SITES["REMOVED"])}
     )
 
     (data_dir / "shabalina_extra.csv").write_text(

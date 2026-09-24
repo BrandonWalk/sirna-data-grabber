@@ -23,7 +23,6 @@ FIXTURE_GENES = [
     "LAMGENE",  # Harborth2003 (2 rows)
     "MARTGENE",  # Martinelli (2 rows)
     "PCSK9",  # CMsiRNAdb
-    "REMOVED",  # REMOVED_REMOVED
     "SCIAGENE",  # Sciabola2013 (2 rows)
     "SCIAGENE2",  # Sciabola2013 (unlocatable accession)
 ]
@@ -71,9 +70,6 @@ def test_describe_genes_reports_sources_and_licenses(patch_data_dir: Path):
     assert by_gene["PCSK9"].sources == ("CMsiRNAdb",)
     assert by_gene["PCSK9"].licenses == ("CC BY-NC-ND 4.0",)
     assert by_gene["GENEA"].licenses == ("CC BY-NC",)
-    # the REMOVED panel's license could not be established -- that must show
-    # up here rather than being reported as permissive or dropped.
-    assert by_gene["REMOVED"].licenses == ("unresolved",)
 
 
 def test_describe_genes_reports_accessions(patch_data_dir: Path):

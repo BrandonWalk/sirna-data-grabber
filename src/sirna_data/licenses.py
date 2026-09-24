@@ -97,21 +97,6 @@ SOURCE_LICENSES: dict[str, SourceLicense] = {
         url="https://doi.org/10.1093/nar/gkad665",
         notes="Attribution required. 20 chemically modified sdRNAs.",
     ),
-    "REMOVED": SourceLicense(
-        key="REMOVED",
-        name="REMOVED panel (Xu, Zhao et al. 2024 / REMOVED repo)",
-        license_id=LICENSE_UNRESOLVED,
-        commercial_use=None,
-        derivatives_redistributable=None,
-        record_sources=("REMOVED_REMOVED",),
-        url="https://github.com/REMOVED/REMOVED",
-        notes=(
-            "No LICENSE file in the source repo (all-rights-reserved by "
-            "default) and the data was recovered from a deleted file in its "
-            "git history -- verify redistribution rights with the authors "
-            "before relying on this subset. See NOTICE.md."
-        ),
-    ),
     "shabalina": SourceLicense(
         key="shabalina",
         name="Shabalina, Spiridonov & Ogurtsov 2006",
@@ -232,8 +217,8 @@ def list_licenses() -> list[str]:
     exact strings `load_records(licenses=...)` accepts (case- and
     punctuation-insensitively; see `normalize_license`).
 
-    Includes `LICENSE_UNRESOLVED` ("unresolved"), which is a real, selectable
-    id covering the two sources whose terms could not be established.
+    `LICENSE_UNRESOLVED` ("unresolved") appears here only while some source
+    actually carries it; no current source does.
     """
     return sorted(_BY_NORMALIZED_LICENSE.values())
 

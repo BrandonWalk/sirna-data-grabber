@@ -13,7 +13,7 @@ command that re-fetches it from its original sources. Any project that wants
 this dataset can depend on this repo (or just the PyPI package) rather than
 vendoring a copy of the data or the loading code.
 
-**Currently: 18,085 siRNA records across 117 genes** (`load_records()`
+**Currently: 18,077 siRNA records across 116 genes** (`load_records()`
 default). Every source is individually toggleable via its own `include_<data-source>`
 flag -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for the
 per-source breakdown and audit.
@@ -23,38 +23,35 @@ per-source breakdown and audit.
 | Source | Published | siRNAs | Genes | License |
 |---|---|---|---|---|
 | [siRNAEfficacyDB](https://cellknowledge.com.cn/siRNAEfficacy) (Zhang et al.) | 2024 | 3,488 | 40 | CC BY-NC |
-| [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 | CC BY-NC-ND 4.0 |
+| [CMsiRNAdb](https://cellknowledge.com.cn/CMsiRNAdb/) (He et al.) | 2026 | 12,357 | 13 | CC BY-NC-ND 4.0[^nd] |
 | Shabalina, Spiridonov & Ogurtsov | 2006 | 269 | 41 | CC BY 2.0 |
 | Martinelli / sirna-reproduction | 2023 | 577 | 12 | CC BY-NC 4.0 |
 | Davis, Monopoli et al. (NAR gkaf479) | 2025 | 966 | 4 | CC BY 4.0 |
 | Monopoli, Korkin & Khvorova | 2023 | 20 | 4 | CC BY 4.0 |
-| REMOVED panel (Xu, Zhao et al. / REMOVED) | 2024 | 8 | 1 | none stated -- unresolved[^lic] |
 | [Sciabola et al. in-house panel](https://doi.org/10.1093/nar/gks1191) (NAR Supp. Tables S3/S4) | 2013 | 356 | 10 | CC BY-NC 3.0 |
 | [Harborth et al. lamin A/C panel](https://doi.org/10.1093/nar/gkm699) (via Ichihara et al. 2007) | 2003 | 44 | 1 | CC BY-NC 2.0 UK |
-| **Total** | | **18,085** | **117** | |
+| **Total** | | **18,077** | **116** | |
 
 "Published" is the year of the paper/database each source comes from, not
 when it was added here -- see [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)
 for full citations, license terms, and how each source's data was verified.
 "Genes" is how many distinct genes/reporters that source contributes to this
 dataset; some genes (e.g. `APP`, `MAPT`) are covered by more than one
-source, so the per-source counts don't sum to the 117 total. CMsiRNAdb's
+source, so the per-source counts don't sum to the 116 total. CMsiRNAdb's
 count combines its PCSK9 subset and the other-12-genes addition (same
 underlying paper) -- see the gene-level table below for the split. Davis
 2025 and Monopoli 2023 are from the same lab and cover the same 4 genes
 (`APP`/`MAPT`/`BACE1`/`SNCA`) -- Davis 2025's 966 is already net of
 deduping against Monopoli 2023 and CMsiRNAdb (full) by exact sequence.
 
-[^lic]: The REMOVED repo ships no `LICENSE` file, so it is
-    all-rights-reserved by default under GitHub's terms. Its derivative file
-    is kept locally but excluded from git -- see [`NOTICE.md`](NOTICE.md).
-    "CC BY-NC-ND" means no derivatives may be
-    redistributed, which is why only CMsiRNAdb's untouched original TSV is
-    committed and its per-gene subsets are derived at load time.
+[^nd]: "CC BY-NC-ND" means no derivatives may be redistributed, which is
+    why only CMsiRNAdb's untouched original TSV is committed and its
+    per-gene subsets are derived at load time -- see
+    [`NOTICE.md`](NOTICE.md).
 
 ## Genes in this dataset
 
-All 117 genes currently in `load_records()`'s default output, the source
+All 116 genes currently in `load_records()`'s default output, the source
 dataset(s) each came from, how many siRNA records target that gene, and the
 length of the real mRNA/GenBank transcript its target sites were located in,
 and the cell line(s) it was tested in.
@@ -63,7 +60,7 @@ for genes with more than one distinct transcript accession across records
 (marked [^multi]), the length shown is for the one used by the most records.
 
 <details>
-<summary>Show all 117 genes</summary>
+<summary>Show all 116 genes</summary>
 
 | Gene | Source dataset | siRNAs | Transcript length (nt) | Cell line / test system [^cells] |
 |---|---|---|---|---|
@@ -143,7 +140,6 @@ for genes with more than one distinct transcript accession across records
 | P2RX3 | siRNAEfficacyDB | 90 | 3,792 | HeLa |
 | PAC | Shabalina 2006 | 10 | 906 | not recorded |
 | PCSK9 | CMsiRNAdb (PCSK9) | 2,756 | 3,637 | HeLa (1,825), HepG2 (379), HEK293A (258), +4 more |
-| REMOVED | REMOVED REMOVED panel (Xu/Zhao 2024) | 8 | 2,097 | not recorded |
 | PDPK1 | Shabalina 2006 | 5 | 7,184 | not recorded |
 | PIK3CA | Shabalina 2006 + Sciabola 2013 in-house panel (NAR Supp. S3/S4) | 10 | 9,259 | not recorded (5), Hep3B (5) |
 | PIK3R1 | Shabalina 2006 | 5 | 3,371 | not recorded |
@@ -219,7 +215,7 @@ the cell line that paper's native assay was run in (see
 [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md)). Sciabola 2013's rows are
 Hep3B (QuantiGene 2.0 mRNA, 48 h) and the Harborth 2003 lamin-A/C panel is
 HeLa (lamin A/C protein by immunoblot) -- both from those papers' own
-Methods rather than a column in the data. Shabalina 2006, Martinelli 2023, Monopoli 2023 and the REMOVED panel
+Methods rather than a column in the data. Shabalina 2006, Martinelli 2023 and Monopoli 2023
 don't include a cell-line field in the data shipped here and their papers
 weren't checked for this column, so their rows show "not recorded" rather
 than a value guessed at. Where a gene was tested in more
@@ -253,10 +249,9 @@ data/
   raw/                       fetched CSVs + FASTA transcripts (the actual dataset)
   DATA_SOURCES.md            full provenance, license terms, and trainable-data
                               audit for every source (including CMsiRNAdb full-
-                              database retrieval and the siRecords dedup analysis)
+                              database retrieval)
   POTENTIAL_DATA_SOURCES.md  landscape of sources investigated
   data_source_ledger.csv     machine-readable companion to DATA_SOURCES.md
-  *.png                      figures referenced by the docs above
 src/sirna_data/
   raw_loader.py               load + merge every source into SiRNARecord rows
   genes.py                     list_genes / describe_genes -- what genes are available to load
@@ -295,8 +290,8 @@ tests/
 ```
 
 Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
-dataset, where it came from, and the bottom-line audit (7,518 trainable
-records across 108 genes, 8 sources — 18,085 records / 117 genes if the
+dataset, where it came from, and the bottom-line audit (7,510 trainable
+records across 107 genes, 7 sources — 18,077 records / 116 genes if the
 optional CMsiRNAdb full-database retrieval and Davis2025 are also
 included). Primary source is **siRNAEfficacyDB** (Zhang et al. 2024, CC
 BY-NC); see the docs for the rest and their individual license terms
@@ -387,7 +382,7 @@ transcript.accession, transcript.sequence
 ```
 
 `load_records()` takes `include_sirna_efficacy` / `include_monopoli` /
-`include_REMOVED` / `include_shabalina` / `include_martinelli` /
+`include_shabalina` / `include_martinelli` /
 `include_harborth2003` / `include_sciabola2013` / `include_cmsirnadb` /
 `include_cmsirnadb_full` / `include_davis2025` flags
 (all default `True`) to include or exclude any individual source.
@@ -402,8 +397,8 @@ default relative `data/raw/` location, in that order.
 ```python
 from sirna_data import list_genes, describe_genes
 
-list_genes()          # ['ACP5', 'AGT', 'AKT1', ...] -- all 117, sorted
-len(list_genes())     # 117
+list_genes()          # ['ACP5', 'AGT', 'AKT1', ...] -- all 116, sorted
+len(list_genes())     # 116
 
 # same thing with per-gene detail:
 for info in describe_genes():

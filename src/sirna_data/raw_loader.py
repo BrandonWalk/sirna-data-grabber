@@ -234,52 +234,6 @@ def _load_monopoli_records(flank_nt: int, data_dir: Path | None = None) -> list[
     return records
 
 
-def _load_REMOVED_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
-    """REMOVED (PD-1) 8-siRNA panel, recovered from a deleted
-    `data/ExperimentalData/REMOVED_8.csv` in the git history of
-    github.com/REMOVED/REMOVED (commit f3254ee, before it was
-    removed in d2ad931). Dual-readout luciferase + qPCR knockdown assay;
-    every sense sequence verified by exact substring match against the
-    real NM_005018.3 (REMOVED) mRNA transcript before being trusted -- see
-    data/DATA_SOURCES.md. +1 gene (REMOVED), not present in any other
-    integrated source.
-    """
-    data_dir = data_dir or DATA_DIR
-    csv_path = data_dir / "REMOVED"
-    fasta_path = data_dir / "REMOVED"
-    if not csv_path.exists() or not fasta_path.exists():
-        return []
-
-    df = pd.read_csv(csv_path)
-    transcripts = {acc: _dna_to_rna(seq) for acc, seq in read_fasta(fasta_path).items()}
-
-    records: list[SiRNARecord] = []
-    for i, row in df.iterrows():
-        sense = _dna_to_rna(row["Sequence"])  # verified to match the transcript directly
-        guide_seq = _revcomp(sense)
-        transcript = transcripts.get(row["Accession_number"])
-        mrna_window, window_site_start, has_flanking_context = _locate_window(
-            sense, transcript, flank_nt
-        )
-        records.append(
-            SiRNARecord(
-                row_id=f"REMOVED_row{i}",
-                gene=row["Gene"],
-                accession=row["Accession_number"],
-                guide_seq=guide_seq,
-                duplex_len=len(guide_seq),  # 19nt, fully paired, no 3' overhang given
-                mrna_window=mrna_window,
-                site_start=window_site_start,
-                site_len=len(sense),
-                has_flanking_context=has_flanking_context,
-                label=float(row["Efficiency_QPCR_Pct"]),
-                technology="Dual-readout (luciferase reporter + qPCR) knockdown assay",
-                source="REMOVED_REMOVED",
-            )
-        )
-    return records
-
-
 def _load_shabalina_records(flank_nt: int, data_dir: Path | None = None) -> list[SiRNARecord]:
     """Shabalina, Spiridonov & Ogurtsov 2006 (BMC Bioinformatics 7:65)
     Additional File 4: a 653-siRNA heterogeneous compilation, filtered down
@@ -1124,7 +1078,6 @@ def load_records(
     include_sirna_efficacy: bool = True,
     include_harborth2003: bool = True,
     include_monopoli: bool = True,
-    include_REMOVED: bool = True,
     include_shabalina: bool = True,
     include_martinelli: bool = True,
     include_sciabola2013: bool = True,
@@ -1211,8 +1164,6 @@ def load_records(
     records += harborth2003_records
     if wanted("monopoli", include_monopoli):
         records += _load_monopoli_records(flank_nt, resolved_dir)
-    if wanted("REMOVED", include_REMOVED):
-        records += _load_REMOVED_records(flank_nt, resolved_dir)
     if wanted("shabalina", include_shabalina):
         records += _load_shabalina_records(flank_nt, resolved_dir)
     if wanted("martinelli", include_martinelli):

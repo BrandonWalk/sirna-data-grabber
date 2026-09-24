@@ -16,7 +16,6 @@ from sirna_data.raw_loader import (
     _load_davis2025_records,
     _load_martinelli_records,
     _load_monopoli_records,
-    _load_REMOVED_records,
     _load_shabalina_records,
     _load_sirnaefficacydb_records,
     _locate_window,
@@ -154,22 +153,6 @@ def test_load_monopoli_records(patch_data_dir: Path, fixture_constants):
     assert r.is_modified is True
     assert r.modification_chemistry is not None
     assert "sdRNA" in r.modification_chemistry
-    assert r.sense_modifications is None
-    assert r.antisense_modifications is None
-
-
-def test_load_REMOVED_records(patch_data_dir: Path, fixture_constants):
-    records = _load_REMOVED_records(FLANK)
-    assert len(records) == 1
-    r = records[0]
-    assert r.gene == "REMOVED"
-    assert r.source == "REMOVED_REMOVED"
-    assert r.label == pytest.approx(96.5)
-    assert r.has_flanking_context is True
-    assert r.guide_seq == _revcomp(fixture_constants.sites["REMOVED"])
-    # Unmodified source (standard synthetic siRNA) -- the schema's defaults.
-    assert r.is_modified is False
-    assert r.modification_chemistry is None
     assert r.sense_modifications is None
     assert r.antisense_modifications is None
 
@@ -428,8 +411,7 @@ def test_load_cmsirnadb_full_records_dedup_against_existing(
     "loader",
     [
         _load_monopoli_records,
-        _load_REMOVED_records,
-        _load_shabalina_records,
+            _load_shabalina_records,
         _load_cmsirnadb_records,
         _load_cmsirnadb_full_records,
         _load_davis2025_records,
@@ -456,14 +438,13 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         fasta_path=fake_data_dir / "mrna_transcripts.fasta",
         flank_nt=FLANK,
     )
-    # 2 primary + 1 each of monopoli/REMOVED/shabalina/cmsirnadb/cmsirnadb_full
+    # 2 primary + 1 each of monopoli/shabalina/cmsirnadb/cmsirnadb_full
     # + 2 martinelli + 2 harborth2003 + 3 sciabola2013 + 2 davis2025
-    assert len(records) == 16
+    assert len(records) == 15
     sources = {r.source for r in records}
     assert sources == {
         "siRNAEfficacyDB",
         "Monopoli2023",
-        "REMOVED_REMOVED",
         "Shabalina2006",
         "Martinelli_sirna_reproduction",
         "Harborth2003",
@@ -480,7 +461,6 @@ def test_load_records_respects_include_flags(patch_data_dir: Path, fake_data_dir
         fasta_path=fake_data_dir / "mrna_transcripts.fasta",
         flank_nt=FLANK,
         include_monopoli=False,
-        include_REMOVED=False,
         include_shabalina=False,
         include_martinelli=False,
         include_harborth2003=False,
@@ -505,9 +485,9 @@ def test_load_records_can_exclude_primary_source(patch_data_dir: Path, fake_data
     )
     assert "siRNAEfficacyDB" not in {r.source for r in records}
     # the other supplementary sources still load by default (1 each of
-    # monopoli/REMOVED/shabalina/cmsirnadb/cmsirnadb_full + 2 martinelli
+    # monopoli/shabalina/cmsirnadb/cmsirnadb_full + 2 martinelli
     # + 2 harborth2003 + 3 sciabola2013 + 2 davis2025)
-    assert len(records) == 14
+    assert len(records) == 13
 
 
 def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake_data_dir: Path):
@@ -517,7 +497,6 @@ def test_load_records_all_flags_false_returns_nothing(patch_data_dir: Path, fake
         flank_nt=FLANK,
         include_sirna_efficacy=False,
         include_monopoli=False,
-        include_REMOVED=False,
         include_shabalina=False,
         include_martinelli=False,
         include_harborth2003=False,
@@ -569,28 +548,11 @@ def test_load_records_licenses_rejects_unknown_license(patch_data_dir: Path):
         load_records(flank_nt=FLANK, licenses=["MIT"])
 
 
-def test_load_records_licenses_does_not_include_unresolved_sources(patch_data_dir: Path):
-    every_cc_license = [
-        "CC BY 2.0",
-        "CC BY 4.0",
-        "CC BY-NC",
-        "CC BY-NC 2.0 UK",
-        "CC BY-NC 3.0",
-        "CC BY-NC 4.0",
-        "CC BY-NC-ND 4.0",
-    ]
-    sources = {r.source for r in load_records(flank_nt=FLANK, licenses=every_cc_license)}
-    assert "REMOVED_REMOVED" not in sources
-    # ...and is loadable only by asking for "unresolved" explicitly
-    unresolved = load_records(flank_nt=FLANK, licenses=["unresolved"])
-    assert {r.source for r in unresolved} == {"REMOVED_REMOVED"}
-
-
 def test_load_records_defaults_to_data_dir(patch_data_dir: Path):
     # csv_path/fasta_path omitted -> should fall back to DATA_DIR/<default filenames>,
     # which patch_data_dir has already pointed at the fixture directory.
     records = load_records(flank_nt=FLANK)
-    assert len(records) == 16
+    assert len(records) == 15
 
 
 def test_load_records_data_dir_arg_without_env_var(
@@ -599,11 +561,10 @@ def test_load_records_data_dir_arg_without_env_var(
     # pass the directory straight to load_records().
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=fake_data_dir)
-    assert len(records) == 16
+    assert len(records) == 15
     assert {r.source for r in records} == {
         "siRNAEfficacyDB",
         "Monopoli2023",
-        "REMOVED_REMOVED",
         "Shabalina2006",
         "Martinelli_sirna_reproduction",
         "Harborth2003",
@@ -617,7 +578,7 @@ def test_load_records_data_dir_arg_without_env_var(
 def test_load_records_data_dir_accepts_str(fake_data_dir: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("SIRNA_DATA_DIR", raising=False)
     records = load_records(flank_nt=FLANK, data_dir=str(fake_data_dir))
-    assert len(records) == 16
+    assert len(records) == 15
 
 
 # --------------------------------------------------------------------------
