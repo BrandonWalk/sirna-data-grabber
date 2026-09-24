@@ -6,11 +6,11 @@ Retrieved via Europe PMC's public supplementaryFiles API (no bot-detection
 evasion involved -- see ../../../data/DATA_SOURCES.md for how this differs
 from the ThermoFisher catalog we declined to scrape).
 
-This is a distinct, smaller augmentation to the primary dataset: different
+This is a distinct, smaller augmentation to siRNAEfficacyDB: different
 assay chemistry (cholesterol-conjugated, heavily 2'-F/2'-OMe/phosphorothioate
 modified "sdRNA", not a standard unmodified siRNA duplex) -- see
 ../../../data/DATA_SOURCES.md for the caveats before trusting this data the
-same way as the primary set.
+same way as siRNAEfficacyDB.
 """
 from __future__ import annotations
 

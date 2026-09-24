@@ -8,28 +8,24 @@ suitable for a regression/classification target), and how much. For the broader
 landscape of sources considered — including ones never obtained or not pursued
 further — see `POTENTIAL_DATA_SOURCES.md`.
 
-- Trainable records currently integrated: 7,518 across 108 genes, all with a
-  numeric %-knockdown label. (18,085 records / 117 genes if the CMsiRNAdb full-database
-  retrieval and Davis2025 below are also included — both on by default via
-  `include_cmsirnadb_full=True` / `include_davis2025=True`; see their own sections.)
-- 7 sources supply that headline 7,510; siRNAEfficacyDB (3,532) and the
-  CMsiRNAdb PCSK9 subset (2,756) are 84% of it.
+- `load_records()` returns 18,077 records across 116 genes by default, all
+  with a numeric %-knockdown label.
 - Chemical modification data: `SiRNARecord` carries `is_modified`/
   `modification_chemistry`/`sense_modifications`/`antisense_modifications` — see
   "Chemical modification data" below.
 
-### Integrated — trainable data (7,518 records)
+### Integrated — trainable data (7,510 records)
 
 | Source | Records | New genes | Metric | Notes |
 |---|---|---|---|---|
-| siRNAEfficacyDB (Zhang 2024) | 3,488 | 40 (baseline) | numeric %Inhibition | Primary source; `sirna_efficacy.csv`. Its 44-row `Lamin A` block is corrupt (44 copies of one duplex) and is superseded by the Harborth 2003 section below — 3,532 rows load when `include_harborth2003=False`. |
+| siRNAEfficacyDB (Zhang 2024) | 3,488 | 40 (baseline) | numeric %Inhibition | `sirna_efficacy.csv`. Its 44-row `Lamin A` block is corrupt (44 copies of one duplex) and is superseded by the Harborth 2003 section below — 3,532 rows load when `include_harborth2003=False`. |
 | CMsiRNAdb — PCSK9 subset (He 2026) | 2,756 | +1 | numeric inhibition | Patent-derived, chemically modified; derived at load time from `cmsirnadb_full_raw.tsv` (CC BY-NC-ND, no derivative file shipped). |
 | Shabalina 2006 | 269 | +41 | numeric (100−Activity) | 269 new after dedup vs 653 in paper; `shabalina_extra.csv`. |
 | Monopoli 2023 | 20 | +4 (APP/MAPT/BACE1/SNCA) | numeric (100−reporter) | Modified sdRNA; `monopoli_extra.csv`. |
 | Martinelli 2023 / sirna-reproduction | 577 | +12 (EGFP, ACP5, APOB, Luciferase_firefly, Luciferase_renilla, NPY, VEGFA, KAZRIN, MIR155HG, CDKN1B, SOD2_chimp, CASR_rhesus) | numeric (PCT) | 577 of 907 rows resolved — 253 by source-document tracing, 324 more by brute-force sequence matching. See the section below. |
 | Sciabola et al. 2013 in-house panel (NAR Supp. Tables S3/S4) | 356 | +4 (BIRC5, EZH2, MTOR, BRAF; also re-sources HIF1A/HK2/HPSE and adds rows to MYC/CTNNB1/PIK3CA) | numeric %Inhibition (mean of the doses each row was screened at) | The paper's own Hep3B/QuantiGene 2.0 measurements, CC BY-NC 3.0. `sciabola2013_extra.csv`. |
-| Harborth et al. 2003 lamin A/C panel (via Ichihara et al. 2007) | 44 | +0 (replaces the corrupt `Lamin A` block in the primary source) | numeric % Inhibition, protein-level (immunoblot, HeLa) | The real 44-duplex panel, from Ichihara 2007's CC BY-NC 2.0 UK republication. Supersedes both second-hand copies the corpus used to carry. `harborth2003_extra.csv`. |
-| TOTAL | 7,518 | 108 genes | — | — |
+| Harborth et al. 2003 lamin A/C panel (via Ichihara et al. 2007) | 44 | +0 (replaces the corrupt `Lamin A` block in siRNAEfficacyDB) | numeric % Inhibition, protein-level (immunoblot, HeLa) | The real 44-duplex panel, from Ichihara 2007's CC BY-NC 2.0 UK republication. Supersedes both second-hand copies the corpus used to carry. `harborth2003_extra.csv`. |
+| TOTAL | 7,510 | 107 genes | — | — |
 
 ### Obtained, not integrated
 
@@ -102,7 +98,7 @@ products, so its prepared data files are not safe to vendor into this project.
   unverified. `technology="Dual-luciferase reporter assay (modified sdRNA)"`
   falls into `graph_build.py`'s existing "other" one-hot bucket, which at
   least lets the model separate this subset's systematic effects from the
-  primary dataset's.
+  other sources'.
 - Label conversion: the source reports "% reporter expression remaining"
   (lower = more potent); we store `label = 100 - reporter_remaining_pct` to
   match `%Inhibition`'s convention (higher = more knockdown).
@@ -240,7 +236,7 @@ products, so its prepared data files are not safe to vendor into this project.
     gene already present; `M25346` (a puromycin-resistance marker, kept as
     gene `PAC`) and the tissue-factor orthologs are kept as legitimate
     distinct non-endogenous targets, the same way "Firefly luciferase",
-    "SEAP", and "EGFP" already are in the primary dataset.
+    "SEAP", and "EGFP" already are in siRNAEfficacyDB.
 - Label conversion: the source's `Activ` column is % activity/expression
   remaining (lower = more potent, same convention as Monopoli's data above);
   we store `label = 100 - Activ` to match `%Inhibition`.
@@ -250,9 +246,9 @@ products, so its prepared data files are not safe to vendor into this project.
   falls into `graph_build.py`'s existing "other" one-hot bucket.
 - Target-site location: exact substring search of the derived sense sequence
   (reverse complement of the source's antisense 19-mer) against the fetched
-  RefSeq/GenBank transcript, same as the primary dataset. 266/269 (98.9%)
+  RefSeq/GenBank transcript, same as siRNAEfficacyDB. 266/269 (98.9%)
   located successfully; the remaining 3 fall back to duplex-only context via
-  `has_flanking_context`, same graceful degradation as the primary dataset.
+  `has_flanking_context`, same graceful degradation as siRNAEfficacyDB.
 - Fetched by `sirna_data.fetch.shabalina` (`sirna-data-fetch`) into
   `data/raw/shabalina_extra.csv` and `data/raw/shabalina_transcripts.fasta`.
 
@@ -616,8 +612,8 @@ products, so its prepared data files are not safe to vendor into this project.
   every other source in this file, the "ND" (No Derivatives) term means we
   can redistribute the *original, unmodified* download but not a
   filtered/curated/collapsed adaptation of it. Built by the same research
-  group as siRNAEfficacyDB (our primary source, same
-  `cellknowledge.com.cn` platform) as an explicit companion covering
+  group as siRNAEfficacyDB (same `cellknowledge.com.cn`
+  platform) as an explicit companion covering
   *chemically modified* siRNAs, which siRNAEfficacyDB doesn't. Live
   database at `cellknowledge.com.cn/CMsiRNAdb/`, with a no-login bulk TSV
   download -- not a paywalled supplement like the two papers investigated
@@ -652,15 +648,12 @@ products, so its prepared data files are not safe to vendor into this project.
   transcript, NM_174936.4; rows whose site isn't found there fall back
   to duplex-only context via the existing `has_flanking_context`
   mechanism, exactly like every other source's unmapped rows.
-- Critical exclusion -- protecting external validation against LEQVIO:
-  PCSK9 is also the target of LEQVIO/inclisiran, one of the 5 FDA-approved
-  drugs in the external-validation set below. Any row whose antisense
-  sequence contains inclisiran's real 19nt target core
-  (`AAGCAAAACAGGUCUAGAA`) is dropped -- 28 rows excluded (2,786 -> 2,758)
-  -- so that drug stays genuinely unseen data for anyone using it for
-  external validation. None of the other 4 external-validation drugs'
-  target genes (TTR, ALAS1, HAO1) are among CMsiRNAdb's 13 genes, so no
-  further exclusion is needed there.
+- Critical exclusion -- keeping LEQVIO/inclisiran unseen: PCSK9 is the
+  target of the approved drug inclisiran, so any row whose antisense
+  sequence contains its real 19nt target core (`AAGCAAAACAGGUCUAGAA`) is
+  dropped -- 28 rows excluded (2,786 -> 2,758). This leaves that drug
+  available as genuinely unseen data for anyone benchmarking against
+  approved siRNAs (`CMSIRNADB_INCLISIRAN_CORE` in `raw_loader.py`).
 - Raw data-entry contamination: a small number of rows (2 for PCSK9)
   have modification-notation characters (parentheses, ambiguity codes)
   bleeding into the sequence column instead of clean bases -- dropped as
@@ -685,7 +678,7 @@ products, so its prepared data files are not safe to vendor into this project.
   worth knowing about. `technology` is tagged
   `"CMsiRNAdb patent-derived, chemically modified (<cell type>)"` per row,
   which falls into downstream feature-engineering's "other" bucket like
-  the rest of this file's non-primary sources.
+  the rest of this file's supplementary sources.
 
 ## CMsiRNAdb — full retrieval, the other 12 genes (9,601 rows, 10 new genes)
 
@@ -753,40 +746,6 @@ products, so its prepared data files are not safe to vendor into this project.
   records, +10 new genes: AGT ANGPTL3 CTNNB1 HSD17B13 INHBE LPA MARC1 MSTN PLN PNPLA3;
   APP & MAPT deepened). Anyone consuming this data with a cached/precomputed downstream
   representation (e.g. a graph cache) should rebuild it after pulling this update.
-
-## External validation: five FDA-approved siRNA drug sequences (not training data)
-
-- Real-world antisense-strand sequences (with 2'-F/2'-O-Me/phosphorothioate
-  chemical modification notation) and reported clinical inhibition for 5
-  FDA-approved siRNA drugs — AMVUTTRA (vutrisiran/TTR), GIVLAARI
-  (givosiran/ALAS1), LEQVIO (inclisiran/PCSK9), OXLUMO (lumasiran/HAO1), and
-  ONPATTRO (patisiran/TTR) — came from AttSiOff (Liu, Yuan, Pan, Shen & Jin
-  2024, *Med-X* 2:5, "AttSiOff: a self-attention-based approach on siRNA
-  design with inhibition and off-target effect prediction", DOI:
-  10.1007/s44258-024-00019-1), Supplementary Table S1, fetched via Europe
-  PMC/Springer's public supplementary-materials link
-  (static-content.springer.com/esm/art%3A10.1007%2Fs44258-024-00019-1/...).
-- Deliberately not part of any train/val/test split — included here purely
-  as a held-out, real-world validation set for anyone benchmarking a model
-  trained on this dataset against approved drugs it never saw in training.
-- Chemical-modification notation was parsed down to plain bases, then each
-  drug's real antisense/sense assignment and the exact 3' overhang boundary
-  were verified computationally (not assumed from table column order,
-  which turned out unreliable — ONPATTRO's antisense/sense were transposed
-  in a naive read of the source table) by exact substring search of every
-  strand/orientation/trim combination against the real NCBI RefSeq
-  transcript, keeping only the confirmed longest match. TTR: NM_000371.4.
-  ALAS1: NM_000688.6 (not the first hit a naive gene-symbol lookup returns,
-  an unrelated PREDICTED XM_ isoform that doesn't contain the target site —
-  fetched the canonical NM_ record directly instead). PCSK9: NM_001407247.1.
-  HAO1: NM_017545.3.
-- AttSiOff's own predicted inhibition + ranking-percentile for these same
-  five drugs (their Supplementary Table S3) is available for comparison if
-  you want to benchmark against it — note AttSiOff itself has no runnable
-  code/weights published anywhere, and its DH/DR/DT training data is not
-  publicly downloadable (only "available from the corresponding author upon
-  reasonable request" per the paper), so only its self-reported numbers can
-  be used, not a re-run.
 
 ## Chemical modification data
 
@@ -859,13 +818,6 @@ Coverage, by source:
   patent US20120088815A1, plus a handful of smaller papers whose full text
   wasn't reachable this round or that turned out to be viral rather than
   human targets.
-- 5 FDA-approved drugs external-validation set -- the AttSiOff source
-  table had 2'-F/2'-O-Me/phosphorothioate notation, but it was parsed down
-  to plain bases during the original verification work (see that section
-  above) and, separately, no code/data file for this set exists in the
-  repo yet at all -- reconstructing its modification data would mean
-  starting over from the source supplement, not just wiring up something
-  already committed.
 - Every other source (siRNAEfficacyDB, Shabalina 2006) -- standard/
   unmodified synthetic siRNA; `is_modified=False` by
   the schema's default, nothing to wire up.

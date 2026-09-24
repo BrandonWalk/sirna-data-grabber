@@ -7,8 +7,8 @@ Retrieved via Europe PMC's public supplementaryFiles API (same legitimate,
 documented bulk-access endpoint used for the Monopoli et al. 2023 data --
 see ../../../data/DATA_SOURCES.md), not scraping.
 
-We only keep rows targeting genes *not already present* in siRNAEfficacyDB
-(our primary dataset): roughly half of the 653 rows (mostly from Khvorova
+We only keep rows targeting genes *not already present* in siRNAEfficacyDB:
+roughly half of the 653 rows (mostly from Khvorova
 et al. 2003 and a few other sources) turned out to be exact-sequence
 duplicates of genes we already have, confirmed by direct antisense-sequence
 matching against data/raw/sirna_efficacy.csv before this module was written.
@@ -21,8 +21,8 @@ distinct paralog from NM_005188/CBL, not the same gene; U47298 is the pGL3
 luciferase reporter vector, i.e. the same "Firefly luciferase" gene already
 present; M25346 (a puromycin-resistance marker, "PAC") and the two
 tissue-factor orthologs are kept as legitimate distinct non-endogenous
-targets, the same way "Firefly luciferase"/"SEAP"/"EGFP" already are in the
-primary dataset).
+targets, the same way "Firefly luciferase"/"SEAP"/"EGFP" already are in
+siRNAEfficacyDB).
 """
 from __future__ import annotations
 

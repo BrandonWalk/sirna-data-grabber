@@ -85,7 +85,7 @@ SOURCE_LICENSES: dict[str, SourceLicense] = {
         derivatives_redistributable=True,
         record_sources=("siRNAEfficacyDB",),
         url="https://cellknowledge.com.cn/siRNAEfficacy",
-        notes="Non-commercial only. The primary source (3,532 of the records).",
+        notes="Non-commercial only. 3,488 of the records.",
     ),
     "monopoli": SourceLicense(
         key="monopoli",

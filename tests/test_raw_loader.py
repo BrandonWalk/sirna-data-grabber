@@ -107,7 +107,7 @@ def test_locate_window_handles_missing_transcript():
 
 
 # --------------------------------------------------------------------------
-# siRNAEfficacyDB (primary source) loader
+# siRNAEfficacyDB loader
 # --------------------------------------------------------------------------
 
 
@@ -126,7 +126,8 @@ def test_load_sirnaefficacydb_records(fake_data_dir: Path, fixture_constants):
     assert located.label == 55.5
     assert located.technology == "Luciferase reporter assay"
     assert located.source == "siRNAEfficacyDB"
-    assert located.mrna_window == fixture_constants.transcript(fixture_constants.sites["primary"])
+    expected = fixture_constants.transcript(fixture_constants.sites["sirna_efficacy"])
+    assert located.mrna_window == expected
 
     # ACC_MISSING has no matching FASTA record -> falls back to duplex-only.
     assert missing.gene == "GENEB"
@@ -438,7 +439,7 @@ def test_load_records_merges_every_source(patch_data_dir: Path, fake_data_dir: P
         fasta_path=fake_data_dir / "mrna_transcripts.fasta",
         flank_nt=FLANK,
     )
-    # 2 primary + 1 each of monopoli/shabalina/cmsirnadb/cmsirnadb_full
+    # 2 siRNAEfficacyDB + 1 each of monopoli/shabalina/cmsirnadb/cmsirnadb_full
     # + 2 martinelli + 2 harborth2003 + 3 sciabola2013 + 2 davis2025
     assert len(records) == 15
     sources = {r.source for r in records}
@@ -469,14 +470,13 @@ def test_load_records_respects_include_flags(patch_data_dir: Path, fake_data_dir
         include_cmsirnadb_full=False,
         include_davis2025=False,
     )
-    # only the 2 primary rows
+    # only the 2 siRNAEfficacyDB rows
     assert len(records) == 2
     assert {r.source for r in records} == {"siRNAEfficacyDB"}
 
 
-def test_load_records_can_exclude_primary_source(patch_data_dir: Path, fake_data_dir: Path):
-    # the primary siRNAEfficacyDB set must be excludable too -- no source is
-    # forced on unconditionally.
+def test_load_records_can_exclude_sirna_efficacy(patch_data_dir: Path, fake_data_dir: Path):
+    # No source is forced on unconditionally.
     records = load_records(
         csv_path=fake_data_dir / "sirna_efficacy.csv",
         fasta_path=fake_data_dir / "mrna_transcripts.fasta",

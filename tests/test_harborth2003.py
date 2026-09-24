@@ -1,5 +1,5 @@
 """Harborth et al. 2003 lamin A/C panel (values via Ichihara et al. 2007),
-plus the supersession it triggers: the primary source's corrupted
+plus the supersession it triggers: siRNAEfficacyDB's corrupted
 `Lamin A` block.
 """
 from __future__ import annotations
@@ -57,7 +57,7 @@ def test_returns_empty_when_files_missing(tmp_path: Path, monkeypatch: pytest.Mo
 # --------------------------------------------------------------------------
 
 
-def test_primary_loader_skips_superseded_genes(fake_data_dir: Path):
+def test_sirna_efficacy_loader_skips_superseded_genes(fake_data_dir: Path):
     csv_path = fake_data_dir / "sirna_efficacy.csv"
     fasta_path = fake_data_dir / "mrna_transcripts.fasta"
     everything = _load_sirnaefficacydb_records(csv_path, fasta_path, FLANK)
@@ -69,9 +69,9 @@ def test_primary_loader_skips_superseded_genes(fake_data_dir: Path):
     assert {r.gene for r in kept} == {"GENEB"}
 
 
-def test_load_records_supersedes_the_primary_sources_block(
+def test_load_records_supersedes_the_sirna_efficacy_block(
     fake_data_dir: Path, monkeypatch: pytest.MonkeyPatch):
-    """With Harborth2003 covering a gene, the primary source's rows for that
+    """With Harborth2003 covering a gene, siRNAEfficacyDB's rows for that
     gene are dropped -- the real-world case being its 44 byte-identical
     `Lamin A` rows."""
     import sirna_data.raw_loader as raw_loader_module

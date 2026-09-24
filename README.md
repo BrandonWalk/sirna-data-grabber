@@ -293,8 +293,8 @@ Start with [`data/DATA_SOURCES.md`](data/DATA_SOURCES.md) for what's in the
 dataset, where it came from, and the bottom-line audit (7,510 trainable
 records across 107 genes, 7 sources — 18,077 records / 116 genes if the
 optional CMsiRNAdb full-database retrieval and Davis2025 are also
-included). Primary source is siRNAEfficacyDB (Zhang et al. 2024, CC
-BY-NC); see the docs for the rest and their individual license terms
+included). The largest single source is siRNAEfficacyDB (Zhang et al. 2024,
+CC BY-NC); see the docs for the rest and their individual license terms
 before reusing this data outside this project.
 
 ## Install

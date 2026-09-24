@@ -137,7 +137,7 @@ def _load_sirnaefficacydb_records(
     flank_nt: int,
     superseded_genes: frozenset[str] = frozenset(),
 ) -> list[SiRNARecord]:
-    """siRNAEfficacyDB (Zhang et al. 2024) -- the primary source. Itself a
+    """siRNAEfficacyDB (Zhang et al. 2024). Itself a
     compilation of classic published assays (Huesken et al. 2005 and
     others; see data/DATA_SOURCES.md), but the raw file has no per-row
     author/study column, so it can only be loaded as this one merged
@@ -186,7 +186,7 @@ def _load_monopoli_records(flank_nt: int, data_dir: Path | None = None) -> list[
     cholesterol-conjugated, heavily 2'-F/2'-OMe/phosphorothioate-modified
     "sdRNA" architecture, not a standard unmodified duplex) against 4 genes
     absent from siRNAEfficacyDB. See data/DATA_SOURCES.md for the caveats
-    before trusting this the same way as the primary dataset.
+    before trusting this the same way as siRNAEfficacyDB.
     """
     data_dir = data_dir or DATA_DIR
     csv_path = data_dir / "monopoli_extra.csv"
@@ -382,7 +382,7 @@ def _load_harborth2003_records(
     all 44 of that file's `Lamin A` rows are byte-identical copies of this
     panel's B1 (`GAGCUCCUGCAGGUCCUCCuu` / `GGAGGACCUGCAGGAGCUC`, 83.0%, same
     cell, dose and timepoint). Every other duplex in that file appears
-    exactly once, so this is a defect in one block of the primary source, not
+    exactly once, so this is a defect in one block of siRNAEfficacyDB, not
     a replicate-measurement pattern: rows that should hold B2-B44 hold B1's
     sequence and B1's label. Those 44 rows are dropped in favour of this
     source -- `load_records()` wires up that supersession.
@@ -1093,12 +1093,11 @@ def load_records(
     when a site can't be located) and its experimentally measured knockdown
     label. See data/DATA_SOURCES.md for full provenance of every source.
 
-    Every source -- including the primary siRNAEfficacyDB set -- is gated
-    behind its own `include_*` flag, so any combination of sources
-    (including none) can be loaded; none is forced on unconditionally.
+    Every source is gated behind its own `include_*` flag, so any
+    combination of sources (including none) can be loaded.
 
     `data_dir` points every source (except any of `csv_path`/`fasta_path`
-    given explicitly, which still win for the primary source) at a specific
+    given explicitly, which still win for siRNAEfficacyDB) at a specific
     directory of fetched files, e.g. `load_records(data_dir="./my_data")`.
     This is a plain function argument -- no `SIRNA_DATA_DIR` env var or
     export required. If omitted, falls back to `SIRNA_DATA_DIR` if set, else
@@ -1147,8 +1146,8 @@ def load_records(
     records: list[SiRNARecord] = []
 
     # Harborth 2003's lamin A/C panel is resolved before anything else
-    # because two other sources carry second-hand copies of it: the primary
-    # source's `Lamin A` block is 44 byte-identical copies of one duplex,
+    # because two other sources carry second-hand copies of it:
+    # siRNAEfficacyDB's `Lamin A` block is 44 byte-identical copies of one duplex,
     # superseded gene-for-gene when this source loads -- see
     # _load_harborth2003_records's docstring.
     harborth2003_records: list[SiRNARecord] = []

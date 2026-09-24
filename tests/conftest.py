@@ -19,7 +19,7 @@ RIGHT_FLANK = "CCCCC"
 # (source key) -> 12nt "site" sequence, distinct per source so fixtures don't
 # collide with each other if ever merged.
 SITES = {
-    "primary": "ACGUACGUACGU",
+    "sirna_efficacy": "ACGUACGUACGU",
     "monopoli": "GGGCCCGGGCCC",
     "shabalina": "AAACCCGGGUUU",
 }
@@ -36,7 +36,7 @@ DAVIS2025_RIGHT_FLANK = "UUUUUUUUUUUUUUU"  # 15nt
 CMSIRNADB_PCSK9_SITE = ("ACGU" * 5)[:19]
 CMSIRNADB_OTHER_SITE = ("GCUA" * 5)[:19]
 
-# Harborth2003 rows carry both strands directly (like the primary source):
+# Harborth2003 rows carry both strands directly (like siRNAEfficacyDB):
 # a 21nt antisense (19nt core + 2nt overhang) and the 19nt sense that is
 # expected to match the transcript.
 HARBORTH2003_SITE = ("AUGG" * 5)[:19]
@@ -88,20 +88,20 @@ def _write_fasta(path: Path, records: dict[str, str]) -> None:
 
 @pytest.fixture
 def fake_data_dir(tmp_path: Path) -> Path:
-    """Build a full fake data/raw/ directory: primary + every supplementary
+    """Build a full fake data/raw/ directory: siRNAEfficacyDB + every supplementary
     source, one row each, with sites embedded in a short synthetic
     transcript ("AAAAA" + site + "CCCCC")."""
     data_dir = tmp_path / "raw"
     data_dir.mkdir()
 
-    # Primary siRNAEfficacyDB set: row0 locates cleanly, row1's accession has
+    # siRNAEfficacyDB set: row0 locates cleanly, row1's accession has
     # no matching transcript (exercises the has_flanking_context=False path).
     (data_dir / "sirna_efficacy.csv").write_text(
         "Gene,Accession_number,Antisense_21mer,Sense_19mer,%Inhibition,Technology\n"
-        f"GENEA,ACC1,CGUACGUACGUACGUACGUA,{SITES['primary']},55.5,Luciferase reporter assay\n"
+        f"GENEA,ACC1,CGUACGUACGUACGUACGUA,{SITES['sirna_efficacy']},55.5,Luciferase reporter assay\n"
         "GENEB,ACC_MISSING,AAAAAAAAAAAAAAAAAAAAA,UUUUUUUUUUUU,10.0,Western blotting\n"
     )
-    _write_fasta(data_dir / "mrna_transcripts.fasta", {"ACC1": _transcript(SITES["primary"])})
+    _write_fasta(data_dir / "mrna_transcripts.fasta", {"ACC1": _transcript(SITES["sirna_efficacy"])})
 
     (data_dir / "monopoli_extra.csv").write_text(
         "Sequence,Gene,Accession_number,Reporter_Remaining_Pct\n"
